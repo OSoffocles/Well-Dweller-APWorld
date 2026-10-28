@@ -1,14 +1,22 @@
 # Well Dweller Setup Guide
 
 ## Requirements
-- Well Dweller (Steam, Windows).
-- Archipelago 0.6.4 or newer.
-- Aurie and YYToolkit (installed with the Aurie Installer), plus the Well Dweller Archipelago mod (`WellDwellerAP.dll`).
+- Well Dweller (Windows; Steam or GOG).
+- [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases) 0.6.4 or newer.
+- [Aurie](https://github.com/AurieFramework/Aurie) and [YYToolkit](https://github.com/AurieFramework/YYToolkit),
+  installed with the [Aurie Installer](https://github.com/AurieFramework/Aurie/releases).
+- From this project's release page: `well_dweller.apworld`, `WellDwellerAP.dll` (the game mod) and
+  `Well Dweller.yaml` (options template).
 
 ## Installation
-1. Install Aurie/YYToolkit for `Well Dweller.exe` with the [Aurie Installer.](https://github.com/AurieFramework/Aurie/releases)
+1. Download and run the [Aurie Installer](https://github.com/AurieFramework/Aurie/releases) and install
+   Aurie/YYToolkit for `Well Dweller.exe`.
 2. Copy `WellDwellerAP.dll` to `<Well Dweller>\mods\aurie\`.
-3. Double-click `well_dweller.apworld` (or copy it to `custom_worlds` in your Archipelago folder).
+3. Install [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases), then double-click
+   `well_dweller.apworld` (or copy it to `custom_worlds` in your Archipelago folder).
+4. Edit `Well Dweller.yaml` (or generate one in the Archipelago Launcher with **Generate Template Options** /
+   **Options Creator**) and put it in Archipelago's `Players` folder. See the
+   [Archipelago setup guide](https://archipelago.gg/tutorial/Archipelago/setup/en) for generating and hosting.
 
 ## Playing
 1. Open the Archipelago Launcher and start **Well Dweller Client**. Connect to the server with your slot name.
@@ -20,8 +28,8 @@
 
 ## Testing with Logic Test (alpha testers)
 This alpha is tested with palex00's **Logic Test** world, which stops you exactly where the logic is wrong.
-1. Download `logic_test.apworld` from https://github.com/palex00/Archipelago/releases/tag/logic-test-0.4.0 and
-   install it like the Well Dweller apworld.
+1. Download `logic_test.apworld` from the [Logic Test release](https://github.com/palex00/Archipelago/releases/tag/logic-test-0.4.0)
+   and install it like the Well Dweller apworld.
 2. Put two YAMLs in Archipelago's `Players` folder: your `Well Dweller.yaml` and `Logic Test.yaml` (both come
    with the release). Only one Well Dweller slot per seed.
 3. Generate and host the seed as usual.
