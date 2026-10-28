@@ -47,7 +47,7 @@ This alpha is tested with palex00's **Logic Test** world, which stops you exactl
 - `/claim` - bind the loaded save to your slot (for a save that was not started fresh).
 - `/wd_status` - show what the game mod reports.
 - `/resync` - send every check the game has reported again.
-- `/goal` - mark your goal as completed by hand.
+- `/goal` - mark your goal as completed by hand (the Queen and secret treasure goals are detected automatically).
 - `/why <part of a location name>` - is the location in logic, and which single item would put it in logic.
 - `/logic` - per area: how many unchecked locations are in logic.
 - `/breaklog on|off` - the local sequence-break log (default on): every check you get while it is out of logic is
@@ -93,10 +93,16 @@ Flags the game sets that are not mapped to locations yet are listed in `unknown.
 - Currency, filler and Death Link options: currency multiplier and Currency item size, extra copies of
   Trinket Points / Workshop Tokens / Oil Vials / Golden Feathers, filler shares for Currency / boons / traps,
   Death Link Amnesty (deaths before one is sent) and Death Wish (Death Links received before one kills you).
-- Option `lever_items` (experimental, Death's Door style): pulling a lever sends its check, its gate opens when
+- Option `lever_items` (hard / long, Death's Door style): pulling a lever sends its check, its gate opens when
   the lever's item arrives (the room resets and puts you back where you stood if you pull a lever you don't have
   the item for). A lever opened by its item sends its own check when you first visit its room. When you don't
   start with the Matchstick, the AN_06 lever item (the gate to the lower Night Garden) is given at the start.
-- Test helpers: **F10** adds 10,000 currency; **F7** writes a snapshot of menu/map values (f7_dump_N.txt) for bug reports.
+  The castle gate levers and the three levers that free Ilda's siblings always work as normal.
+- Option `time_trial_time` (100-300%): more time for the time trials, handy when the logic sends you there
+  before you have the abilities a trial was designed for.
+- Forge checks: each trinket's forge price goes up with every upgrade you buy for it, and a trinket at its
+  highest level can't be forged again (the upgrades themselves come from the multiworld).
+- Test helpers: **F10** adds 10,000 currency; **F7** writes a snapshot of menu/map values (f7_dump_N.txt) for bug reports;
+  **F8** starts/stops a movement recording (move_N.csv) for logic reports.
 - Press **F3** inside a tent to go back to the tent's exit (the shop ledges need Climb or Slingshot to leave).
   Tent Travel is unlocked from the start by default for the same reason.

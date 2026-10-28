@@ -65,9 +65,11 @@ class Levers(Toggle):
 
 
 class LeverItems(Toggle):
-    """Death's Door style levers: pulling a lever only sends its check; the gate it operates opens when
-    that lever's item arrives (receiving the item first also counts the lever as pulled).
-    Turns Lever Checks on. Gate positions come from the online map, so treat this as experimental."""
+    """HARD / LONG: Death's Door style levers. Pulling a lever only sends its check; the gate it operates opens
+    when that lever's item arrives (receiving the item first also counts the lever as pulled).
+    This locks a large part of the map behind ~90 extra items, so seeds take much longer and you will often wait
+    on other players. Turns Lever Checks on. The castle gate levers and the levers that free Ilda's siblings
+    always work as normal."""
     display_name = "Lever Items"
 
 
@@ -79,6 +81,15 @@ class Vessels(Toggle):
 class TimeTrials(Toggle):
     """Completing each of the 10 time trials is a check."""
     display_name = "Time Trial Checks"
+
+
+class TimeTrialTime(Range):
+    """Time you get for the time trials, in percent of the normal time (100 = vanilla, 200 = twice as long).
+    Handy because the logic may send you into a trial before you have the abilities it was designed for."""
+    display_name = "Time Trial Time"
+    range_start = 100
+    range_end = 300
+    default = 100
 
 
 class ForgeChecks(Toggle):
@@ -265,6 +276,7 @@ class WellDwellerOptions(PerGameCommonOptions):
     lever_items: LeverItems
     vessel_checks: Vessels
     time_trial_checks: TimeTrials
+    time_trial_time: TimeTrialTime
     forge_checks: ForgeChecks
     shop_trinket_points_per_check: ShopTrinketPointsPerCheck
     shop_trinket_point_checks: ShopTrinketPoints

@@ -167,6 +167,8 @@ class WellDwellerWorld(World):
                     region_name = "Night Garden Lower"
                 elif room in NG_EAST_ROOMS:
                     region_name = "Night Garden East"
+                elif room == "AN_32":
+                    region_name = "Night Garden AN_32"
                 elif room in NG_UPPER_ROOMS:
                     region_name = "Night Garden Upper"
             if region_name == "Webdrench Inn" and (name in WEBDRENCH_LOWER_NAMED or
@@ -368,6 +370,7 @@ class WellDwellerWorld(World):
             "goal": int(o.goal), "matchstick": int(o.matchstick), "tent_travel": int(o.tent_travel),
             "lever_checks": bool(o.lever_checks), "vessel_checks": bool(o.vessel_checks),
             "time_trial_checks": bool(o.time_trial_checks), "forge_checks": bool(o.forge_checks),
+            "time_trial_time": int(o.time_trial_time),
             "shop_trinket_point_checks": int(o.shop_trinket_point_checks), "death_link": bool(o.death_link),
             "tent_unlocks": int(o.tent_unlocks), "skip_intro": bool(o.skip_intro), "lever_items": bool(o.lever_items),
             "shop_trinket_points_per_check": int(o.shop_trinket_points_per_check),

@@ -206,7 +206,7 @@ class WellDwellerCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_goal(self) -> bool:
-        """Mark your goal as completed (until the game's ending flags are known)."""
+        """Mark your goal as completed by hand (the Queen and secret treasure goals are detected automatically)."""
         ctx: WellDwellerContext = self.ctx  # type: ignore[assignment]
         asyncio.create_task(ctx.send_goal())
         return True
@@ -309,6 +309,7 @@ class WellDwellerContext(CommonContext):
         self.state: dict[str, str] = {}
         self.state_vars: dict[str, str] = {}
         self.unknown_keys: set[str] = set()
+        self.queen_beaten = False   # the game sets "beat_queen" after the Queen fight (goal: queen)
         self.unmapped_grants: set[str] = set()
         self.warned_trinkets: set[str] = set()
         self.claim_requested = False
@@ -376,6 +377,7 @@ class WellDwellerContext(CommonContext):
             self.location_keys = {k: int(v) for k, v in self.slot_data.get("location_keys", {}).items()}
             self.checks_offset = 0
             self.last_items_text = ""
+            self.queen_beaten = False
             if self.slot_data.get("death_link"):
                 asyncio.create_task(self.update_death_link(True))
             shop = [LOCATION_NAME_TO_ID[n] for n in ALL_LOCATIONS
@@ -482,6 +484,7 @@ class WellDwellerContext(CommonContext):
                  *[f"opt shopcost{i} {int(v)}" for i, v in enumerate(self.slot_data.get("shop_costs") or [])],
                  f"opt kill {self.kills_requested}",
                  f"opt lever_items {int(bool(self.slot_data.get('lever_items', False)))}",
+                 f"opt trial_time {int(self.slot_data.get('time_trial_time', 100))}",
                  f"opt shop_per {int(self.slot_data.get('shop_trinket_points_per_check', 1))}",
                  f"opt forge_items {int(bool(self.slot_data.get('forge_checks', False)))}"]
         levels = self.slot_data.get("trinket_max_levels") or []
@@ -685,7 +688,9 @@ class WellDwellerContext(CommonContext):
             parts = line.split()
             if len(parts) >= 2 and parts[0] == "key":
                 key = line.split(" ", 1)[1].strip()  # keys can contain spaces ("Night Garden")
-                if key in self.location_keys:
+                if key == "beat_queen":
+                    self.queen_beaten = True
+                elif key in self.location_keys:
                     found.add(self.location_keys[key])
                 elif key not in self.unknown_keys:
                     self.unknown_keys.add(key)
@@ -805,6 +810,8 @@ class WellDwellerContext(CommonContext):
 
     def goal_reached(self) -> bool:
         goal = int(self.slot_data.get("goal", 0))
+        if goal == 0:   # queen: the game sets "beat_queen" when she is defeated
+            return self.queen_beaten
         if goal == 2 and self.state_live and self.state.get("save") == "ok":  # secret treasure: every trinket received and equipped
             names = {self.item_names.lookup_in_game(i.item) for i in self.items_received}
             active = self.state_vars.get("upgrade_list_active", "")

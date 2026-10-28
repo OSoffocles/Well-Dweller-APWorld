@@ -58,7 +58,16 @@ def trinket_count(s: CollectionState, p: int, trinkets: list[str]) -> int:
     return sum(1 for t in trinkets if s.has(t, p))
 
 
+_ABILITY = {
+    "climb": climb, "endless": endless, "sling": sling, "wsling": wsling,
+    "hover": lambda s, p: s.has("Hover", p), "soar": lambda s, p: s.has("Soar", p),
+    "windride": lambda s, p: s.has("Wind Ride", p),
+}
+
+
 def tag_ok(tag: str, s: CollectionState, p: int, trinkets: list[str]) -> bool:
+    if tag.startswith("alts:"):   # any of the '|'-separated ability sets
+        return any(all(_ABILITY[a](s, p) for a in alt.split("+")) for alt in tag[5:].split("|"))
     if tag == "boss":
         return s.has("Matchstick", p)
     if tag == "climb":
@@ -71,6 +80,34 @@ def tag_ok(tag: str, s: CollectionState, p: int, trinkets: list[str]) -> bool:
         return s.has("Hover", p) and sling(s, p) and (climb(s, p) or s.has("Soar", p))
     if tag == "climb_plus":   # Climb + Slingshot, Climb + Wall Sling, Endless Climb or Soar
         return vert(s, p) or (climb(s, p) and sling(s, p))
+    if tag == "climb_sw":   # Climb with Slingshot or Wall Sling, or Soar
+        return s.has("Soar", p) or (climb(s, p) and (sling(s, p) or wsling(s, p)))
+    if tag == "climb_sh":   # Climb with Slingshot or Hover, or Soar
+        return s.has("Soar", p) or (climb(s, p) and (sling(s, p) or s.has("Hover", p)))
+    if tag == "climb_ws":   # Climb + Wall Sling, or Soar
+        return s.has("Soar", p) or (climb(s, p) and wsling(s, p))
+    if tag == "wsling_hover": return s.has("Soar", p) or (wsling(s, p) and s.has("Hover", p))
+    if tag == "climb_s_endless": return s.has("Soar", p) or endless(s, p) or (climb(s, p) and sling(s, p))
+    if tag == "sling_soar": return s.has("Soar", p) or sling(s, p)
+    if tag == "hover_soar": return s.has_any(("Soar", "Hover"), p)
+    if tag == "climb_s": return s.has("Soar", p) or (climb(s, p) and sling(s, p))
+    if tag == "climb_hover_soar": return s.has("Soar", p) or (climb(s, p) and s.has("Hover", p))
+    if tag == "climb_wh": return s.has("Soar", p) or (climb(s, p) and (wsling(s, p) or s.has("Hover", p)))
+    if tag == "climb_ws_endless": return s.has("Soar", p) or endless(s, p) or (climb(s, p) and wsling(s, p))
+    if tag == "windride_soar": return s.has_any(("Soar", "Wind Ride"), p)
+    if tag == "windride_hover": return s.has_all(("Wind Ride", "Hover"), p)
+    if tag == "climb_hover": return climb(s, p) and s.has("Hover", p)
+    if tag == "hover_climb_sw": return s.has("Hover", p) and tag_ok("climb_sw", s, p, trinkets)
+    if tag == "hover_climb_ws": return s.has("Hover", p) and tag_ok("climb_ws", s, p, trinkets)
+    if tag == "climb_hover_sw": return s.has("Soar", p) or (climb(s, p) and s.has("Hover", p) and (sling(s, p) or wsling(s, p)))
+    if tag == "climb_s_hover": return s.has("Soar", p) or (climb(s, p) and s.has("Hover", p) and sling(s, p))
+    if tag == "ap28": return s.has_any(("Soar", "Wind Ride"), p) and climb(s, p) and (sling(s, p) or wsling(s, p))
+    if tag == "endless_hover":   # Endless Climb + Hover, or Soar
+        return s.has("Soar", p) or (endless(s, p) and s.has("Hover", p))
+    if tag == "an09":   # Hover, plus either the AN_06 gate side (from the right) or Climb+Slingshot/Wall Sling/Soar from the left
+        from .data import NG_GATE_LEVER
+        gate = s.has("Matchstick", p) and (not s.multiworld.worlds[p].options.lever_items or s.has(NG_GATE_LEVER, p))
+        return s.has("Hover", p) and (gate or tag_ok("climb_sw", s, p, trinkets))
     if tag == "hover":
         return s.has("Hover", p)
     if tag == "windride":

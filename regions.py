@@ -9,9 +9,9 @@ if TYPE_CHECKING:
     from .world import WellDwellerWorld
 
 REGIONS = [
-    "Menu", "The Well", "Night Garden", "Night Garden East", "Night Garden Upper", "Night Garden Lower", "Hunter's Cabin", "Hunter's Cabin Upper", "The Bog", "Bog Interior",
+    "Menu", "The Well", "Night Garden", "Night Garden East", "Night Garden Upper", "Night Garden AN_32", "Night Garden Lower", "Hunter's Cabin", "Hunter's Cabin Upper", "The Bog", "Bog Interior",
     "Gravenvalley", "Gravenvalley Interior", "Gravenvalley Witch Burning", "The Drains", "Drains Depths",
-    "Midnight Drench", "Desiccated Castle West", "Desiccated Castle East", "Desiccated Castle Lower",
+    "Midnight Drench", "Midnight Drench West", "Desiccated Castle West", "Desiccated Castle East", "Desiccated Castle Lower", "Desiccated Castle Inner", "Desiccated Castle AC_33",
     "The Docks", "Whisper's Hut", "The Depths", "Autumn Forest", "Forest King", "Lookout Tower",
     "Dollmaker's House", "Burial Vault", "Webdrench Inn", "Webdrench Inn Lower", "Queen's Castle", "Queen's Throne", "Queen's Chamber",
 ]
@@ -34,7 +34,11 @@ def create_regions(world: "WellDwellerWorld") -> None:
     link("Night Garden East", "Night Garden Lower", gate)
     # Up from AN_05/AN_06 to AN_26-AN_32.
     link("Night Garden East", "Night Garden Upper",
-         lambda s: s.has("Soar", p) or (climb(s, p) and sling(s, p) and s.has("Hover", p)))
+         lambda s: s.has("Soar", p) or (climb(s, p) and (sling(s, p) or wsling(s, p)) and s.has("Hover", p)))
+    # AN_32 (Glass Shard, the garden gate levers): also reached from Hunter's Cabin (AH_18 -> AH_21 -> AN_32) with
+    # Climb + Wall Sling.
+    link("Night Garden Upper", "Night Garden AN_32")
+    link("Hunter's Cabin Upper", "Night Garden AN_32", lambda s: climb(s, p) and wsling(s, p))
     # The AN_04 gate (AN_04 -> AN_09) is opened from below; with lever items its item opens it from the top too,
     # but getting down to AN_08/AN_09 that way needs vertical movement.
     if world.options.lever_items:
@@ -54,12 +58,21 @@ def create_regions(world: "WellDwellerWorld") -> None:
     # Wind Ride or VERT, otherwise Tent Travel gets you out.
     link("Night Garden Lower", "Drains Depths",
          lambda s: (climb(s, p) or s.has("Soar", p)) and (s.has_any(("Wind Ride", "Tent Travel"), p) or vert(s, p)))
-    link("Drains Depths", "Midnight Drench", lambda s: s.has("Elevator Part", p, 3) and s.has("Matchstick", p))
+    # The Drains elevator lands in the west part of Midnight Drench (AL_01-AL_08, Willow). Its tents and the
+    # castle/Burial Vault side don't lead there, so that part needs the elevator.
+    link("Drains Depths", "Midnight Drench West", lambda s: s.has("Elevator Part", p, 3) and s.has("Matchstick", p))
+    link("Midnight Drench West", "Midnight Drench")
     link("Gravenvalley Interior", "Desiccated Castle West")
     link("Midnight Drench", "Desiccated Castle East")
     lower = link("Desiccated Castle East", "Desiccated Castle Lower",
                  lambda s: s.can_reach_region("Desiccated Castle West", p))
     mw.register_indirect_condition(regions["Desiccated Castle West"], lower)
+    # Virtually every castle check needs Soar or the Slingshot (Climb/Hover alone don't get around);
+    # the few reached with Climb alone stay in Desiccated Castle Lower (data.LOCATION_REGION).
+    link("Desiccated Castle Lower", "Desiccated Castle Inner", lambda s: s.has("Soar", p) or sling(s, p))
+    # AC_33 (Hover Egg, its tent): straight from the Night Garden (AN_16 -> AC_33) with Climb.
+    link("Desiccated Castle Lower", "Desiccated Castle AC_33")
+    link("Night Garden Lower", "Desiccated Castle AC_33", lambda s: climb(s, p))
     link("Gravenvalley Interior", "The Docks",
          lambda s: s.has("Soar", p) or (climb(s, p) and s.has("Hover", p)))
     link("The Docks", "Whisper's Hut", lambda s: vert(s, p))
@@ -76,7 +89,9 @@ def create_regions(world: "WellDwellerWorld") -> None:
     # the AW_06 lever only opens from below).
     aw05 = (lambda s: s.has(WEBDRENCH_GATE_LEVER, p)) if world.options.lever_items else None
     link("Webdrench Inn", "Webdrench Inn Lower", aw05)
-    link("Bog Interior", "Queen's Castle", lambda s: s.has("Golden Feather", p, 7))
+    # Getting to the castle without Hover is very hard; Climb + Wall Sling + Hover is the minimum.
+    link("Bog Interior", "Queen's Castle",
+         lambda s: s.has("Golden Feather", p, 7) and climb(s, p) and wsling(s, p) and s.has("Hover", p))
     link("Queen's Castle", "Queen's Throne",
          lambda s: s.has("Matchstick", p) and (s.has("Soar", p) or (
              sling(s, p) and wsling(s, p) and s.has("Hover", p) and climb(s, p))))

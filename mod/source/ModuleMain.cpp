@@ -34,7 +34,7 @@
 using namespace Aurie;
 using namespace YYTK;
 
-static constexpr const char* MOD_VERSION = "0.1.4";
+static constexpr const char* MOD_VERSION = "0.1.9";
 
 static YYTKInterface* g_Yytk = nullptr;
 static fs::path g_Dir;
@@ -630,12 +630,43 @@ static const LeverItem* LeverByKey(const std::string& Key)
 	return nullptr;
 }
 
+// Levers that free Ilda's siblings (AQ_15, AQ_21, AQ_29) open a cage, not a gate: the freeing only plays when the
+// player pulls them. They stay vanilla even with lever items (their items, if received, do nothing).
+static const char* SIBLING_LEVERS[] = { "AQ_15-3616-1984", "AQ_21-576-2944", "AQ_29-3616-1984" };
+
+static bool IsSiblingLever(const char* Key)
+{
+	for (const char* k : SIBLING_LEVERS) if (std::string(Key) == k) return true;
+	return false;
+}
+
+// Saves from mod 0.1.6 and older may have these keys set by a lever item (lever shown as pulled, sibling never freed):
+// clear them once per save so the levers can be pulled (a lever already pulled by hand can simply be pulled again).
+static void ResetSiblingLevers()
+{
+	if (PvarExists("ap_sibling_levers_reset")) return;
+	PvarAddFlag("ap_sibling_levers_reset");
+	for (const char* k : SIBLING_LEVERS)
+	{
+		std::string marker = std::string("ap_lv_") + k;
+		bool byItem = PvarExists(marker);
+		if (byItem) PvarDelete(marker);
+		if (PvarExists(k))
+		{
+			PvarDelete(k);
+			Log(std::string("sibling lever reset (was set by its lever item): ") + k);
+		}
+	}
+}
+
 static void ManageLevers(const std::string& Room, ULONGLONG Now)
 {
 	if (Opt("lever_items", 0) < 1) return;
+	ResetSiblingLevers();
 	bool restart = false, opened = false;
 	for (const LeverItem& l : LEVERS)
 	{
+		if (IsSiblingLever(l.Key)) continue;
 		bool owned = Count(l.ItemId) > 0;
 		bool on = PvarExists(l.Key);
 		if (owned && !on)
@@ -695,16 +726,21 @@ static void ClearGateLocks()
 static void RestoreAfterRestart(const std::string& Room, ULONGLONG Now)
 {
 	if (g_RestoreRoom.empty() || Now < g_RestoreAt) return;
-	if (Room != g_RestoreRoom || g_RestoreTries >= 6) { g_RestoreRoom.clear(); return; }
+	if (Room != g_RestoreRoom || g_RestoreTries >= 3) { g_RestoreRoom.clear(); return; }
 	g_RestoreTries++;
 	RValue player; double px = 0, py = 0; std::string why;
 	if (!InstanceXY("oPlayer", player, px, py, why)) return;
-	if (std::abs(px - g_RestoreX) > 8 || std::abs(py - g_RestoreY) > 8)
+	// Only move the player while they are still at the room's spawn point (far from the lever). Once put back they
+	// fall/move normally; re-teleporting on every small move kept them falling onto the lever in a loop (mod 0.1.5).
+	if (std::abs(px - g_RestoreX) > 200 || std::abs(py - g_RestoreY) > 200)
 	{
-		g_Yytk->CallBuiltin("variable_instance_set", { player, RValue(std::string_view("x")), RValue(g_RestoreX) });
-		g_Yytk->CallBuiltin("variable_instance_set", { player, RValue(std::string_view("y")), RValue(g_RestoreY) });
+		auto set = [&](const char* name, double v)
+		{ g_Yytk->CallBuiltin("variable_instance_set", { player, RValue(std::string_view(name)), RValue(v) }); };
+		set("x", g_RestoreX); set("y", g_RestoreY);
+		set("xprevious", g_RestoreX); set("yprevious", g_RestoreY);
+		set("hsp", 0); set("vsp", 0);
 		Log("lever room restart: player put back at " + Num(g_RestoreX) + "," + Num(g_RestoreY));
-		g_RestoreTries = 4;   // one more check afterwards
+		g_RestoreRoom.clear();   // done: one teleport per restart
 	}
 }
 
@@ -768,6 +804,7 @@ static void MarkShopTrinketBought(int Idx, const char* How)
 // (levels and equipped slots).
 struct ShopSaved { double Level = 0, Active = -1; };
 static bool g_ShopWindow = false;
+static std::map<int, double> g_ForgeShown;   // forge level the mod last set per trinket (purchase detection)
 static std::map<int, ShopSaved> g_ShopSaved;
 
 // shop.txt (from the client): "s\t<sel_ii>\t<name>\t<description>" - what a shop entry gives the multiworld.
@@ -854,6 +891,22 @@ static void ForgeShowItem()
 	RValue mode = g_Yytk->CallBuiltin("variable_instance_get", { inst, RValue(std::string_view("mode")) });
 	if (!mode.IsNumberConvertible() || mode.ToDouble() < 1) return;
 	g_Yytk->CallBuiltin("variable_instance_set", { inst, RValue(std::string_view("sel_upgrade_desc")), RValue(std::string_view(g_ForgeText)) });
+}
+
+// Forge window open (o_upgrade_trinkets in mode >= 1). A purchase may flip mode for a moment: stay "open" briefly.
+static ULONGLONG g_ForgeLastOpen = 0;
+static bool ForgeWindowOpen()
+{
+	static RValue obj;
+	if (obj.IsUndefined()) obj = g_Yytk->CallBuiltin("asset_get_index", { RValue(std::string_view("o_upgrade_trinkets")) });
+	RValue inst = g_Yytk->CallBuiltin("instance_find", { obj, RValue(0.0) });
+	ULONGLONG now = GetTickCount64();
+	if (!inst.IsUndefined() && !(inst.IsNumberConvertible() && inst.ToDouble() < 0))
+	{
+		RValue mode = g_Yytk->CallBuiltin("variable_instance_get", { inst, RValue(std::string_view("mode")) });
+		if (mode.IsNumberConvertible() && mode.ToDouble() >= 1) { g_ForgeLastOpen = now; return true; }
+	}
+	return g_ForgeLastOpen != 0 && now - g_ForgeLastOpen < 1500;
 }
 
 // Shop prices (opt shopcost0..8, from the apworld's shop_prices option): written into the shop's cost_array
@@ -969,6 +1022,12 @@ static void EnforceItems(const std::string& Room)
 		SetNumber(g_LentVar.c_str(), want);
 		g_LentVar.clear(); g_LentRoom.clear(); g_LentUntil = 0;
 	}
+	// The player object keeps its own copy of some of these (oPlayer.has_match): a vanilla pickup set both, and
+	// resetting only the global left the Matchstick usable until the next save point (fixed in mod 0.1.8).
+	static RValue playerObj;
+	if (playerObj.IsUndefined()) playerObj = g_Yytk->CallBuiltin("asset_get_index", { RValue(std::string_view("oPlayer")) });
+	RValue player = g_Yytk->CallBuiltin("instance_find", { playerObj, RValue(0.0) });
+	bool havePlayer = !player.IsUndefined() && !(player.IsNumberConvertible() && player.ToDouble() < 0);
 	for (const Enforced& e : FLAGS)
 	{
 		double cur = 0;
@@ -981,6 +1040,17 @@ static void EnforceItems(const std::string& Room)
 			Log(std::string("vanilla grant of ") + e.Var + " in " + Room + " -> reset");
 		}
 		if (cur != want) SetNumber(e.Var, want);
+		if (havePlayer && g_Yytk->CallBuiltin("variable_instance_exists", { player, RValue(std::string_view(e.Var)) }).ToBoolean())
+		{
+			RValue pv = g_Yytk->CallBuiltin("variable_instance_get", { player, RValue(std::string_view(e.Var)) });
+			// Only take it away: the game itself sets the player's copy to 0 while the Matchstick is planted
+			// (Slingshot / Wall Sling), so forcing it back to 1 would break those (seen in mod 0.1.8 logs).
+			if (want < 1 && pv.IsNumberConvertible() && pv.ToDouble() > want)
+			{
+				g_Yytk->CallBuiltin("variable_instance_set", { player, RValue(std::string_view(e.Var)), RValue(want) });
+				Log(std::string("player copy of ") + e.Var + " set to " + Num(want));
+			}
+		}
 	}
 	for (const Counted& c : COUNTS)
 	{
@@ -1063,6 +1133,7 @@ static void EnforceItems(const std::string& Room)
 		}
 		bool inTent = Room == "r_inside_tent";
 		bool forgeItems = Opt("forge_items", 0) >= 1;
+		bool forgeOpen = inTent && forgeItems && ForgeWindowOpen();
 		for (size_t i = 0; i < n; i++)
 		{
 			RValue* e = nullptr;
@@ -1102,15 +1173,28 @@ static void EnforceItems(const std::string& Room)
 			auto ml = g_Items.MaxLevel.find(idx);
 			int maxLevel = ml == g_Items.MaxLevel.end() ? 3 : ml->second;
 			double want = 1 + std::min(Count(500 + idx), maxLevel - 1);
-			if (level > want && level > 0)
+			// Forge purchases are checks; the upgrades themselves come from the multiworld. While the forge window
+			// is open each trinket shows its forge level (1 + purchases made on it), so prices go up per trinket
+			// and a trinket forged to its max can't be bought again (before mod 0.1.8 the level snapped back, so the
+			// cheapest step could be bought over and over).
+			std::string forgedKey = "ap_forged_" + std::to_string(i);
+			int forged = static_cast<int>(PvarNumber(forgedKey, 0));
+			double shown = forgeOpen ? 1 + std::min(forged, maxLevel - 1) : want;
+			auto last = g_ForgeShown.find(idx);
+			if (inTent && last != g_ForgeShown.end() && level > last->second && level > 0)
 			{
-				int steps = static_cast<int>(level - want);
+				int steps = static_cast<int>(level - last->second);
+				forged += steps;
+				PvarSet(forgedKey, RValue(static_cast<double>(forged)));
 				int count = static_cast<int>(PvarNumber("ap_forge_count", 0)) + steps;
 				PvarSet("ap_forge_count", RValue(static_cast<double>(count)));
 				AppendCheck("forge " + std::to_string(count));
-				Log("forge purchase on trinket " + std::to_string(i) + " -> check " + std::to_string(count) + ", level back to " + Num(want));
+				Log("forge purchase on trinket " + std::to_string(i) + " (forged " + std::to_string(forged) + "/" +
+					std::to_string(maxLevel - 1) + ") -> check " + std::to_string(count));
+				shown = forgeOpen ? 1 + std::min(forged, maxLevel - 1) : want;
 			}
-			if (level != want) *e = RValue(want);
+			g_ForgeShown[idx] = shown;
+			if (level != shown) *e = RValue(shown);
 		}
 	}
 }
@@ -1469,6 +1553,29 @@ static void SkipTutorial(const std::string& Room, const std::string& PrevRoom, b
 // Test helper: <game>\archipelago\set_flags.txt, one flag per line ("-flag" removes it).
 // Applied to the loaded Archipelago save whenever the file changes.
 static fs::file_time_type g_FlagsStamp{};
+// Time trials (AX_ rooms): o_blue_room_control.time_allowed (frames, set by the room's creation code) is scaled by
+// opt trial_time (percent, from the apworld's time_trial_time option). Done once per room instance.
+static void ScaleTrialTime(const std::string& Room)
+{
+	if (Room.rfind("AX_", 0) != 0) return;
+	double pct = Opt("trial_time", 100);
+	if (pct <= 100) return;
+	static RValue obj;
+	if (obj.IsUndefined()) obj = g_Yytk->CallBuiltin("asset_get_index", { RValue(std::string_view("o_blue_room_control")) });
+	RValue inst = g_Yytk->CallBuiltin("instance_find", { obj, RValue(0.0) });
+	if (inst.IsUndefined() || (inst.IsNumberConvertible() && inst.ToDouble() < 0)) return;
+	if (g_Yytk->CallBuiltin("variable_instance_exists", { inst, RValue(std::string_view("ap_time_scaled")) }).ToBoolean()) return;
+	RValue t = g_Yytk->CallBuiltin("variable_instance_get", { inst, RValue(std::string_view("time_allowed")) });
+	if (!t.IsNumberConvertible() || t.ToDouble() <= 0) return;
+	double before = t.ToDouble(), after = std::round(before * pct / 100.0);
+	g_Yytk->CallBuiltin("variable_instance_set", { inst, RValue(std::string_view("time_allowed")), RValue(after) });
+	RValue cd = g_Yytk->CallBuiltin("variable_instance_get", { inst, RValue(std::string_view("count_down")) });
+	if (cd.IsNumberConvertible() && cd.ToDouble() == before)
+		g_Yytk->CallBuiltin("variable_instance_set", { inst, RValue(std::string_view("count_down")), RValue(after) });
+	g_Yytk->CallBuiltin("variable_instance_set", { inst, RValue(std::string_view("ap_time_scaled")), RValue(1.0) });
+	Log("time trial " + Room + ": time_allowed " + Num(before) + " -> " + Num(after) + " (" + Num(pct) + "%)");
+}
+
 static void ApplyFlagsFile()
 {
 	std::error_code ec;
@@ -1548,6 +1655,7 @@ static void Tick()
 		if (justEntered || roomChanged) ClearGateLocks();
 		SyncMarks(now);
 		SkipIntro(room);
+		ScaleTrialTime(room);
 		if (justEntered) g_FlagsStamp = {};
 		ApplyFlagsFile();
 		ApplyConsumables();
@@ -1568,6 +1676,8 @@ static void Tick()
 		WriteState(room, ingame);
 	}
 }
+
+#include "MoveLog.inc"
 
 static bool g_InCallback = false;
 static std::string g_ShotPending;
@@ -1825,6 +1935,14 @@ static void ObjectCallback(FWCodeEvent& Context)
 			g_InCallback = false;
 			return;
 		}
+		if (name && g_MoveRec && std::strcmp(name, "gml_Object_oPlayer_Step_0") == 0)
+		{
+			Context.Call();
+			g_InCallback = true;
+			try { MoveRecorderStep(); } catch (...) {}
+			g_InCallback = false;
+			return;
+		}
 		if (name && std::strcmp(name, "gml_Object_o_Map_Draw_Draw_64") == 0)
 		{
 			Context.Call();
@@ -1838,7 +1956,7 @@ static void ObjectCallback(FWCodeEvent& Context)
 	g_InCallback = true;
 	try
 	{
-		if (g_WasInGame) { TentExitHotkey(g_LastRoom); DebugCurrencyHotkey(); DumpMenusHotkey(); MapFilterHotkey(); }
+		if (g_WasInGame) { TentExitHotkey(g_LastRoom); DebugCurrencyHotkey(); DumpMenusHotkey(); MapFilterHotkey(); MoveRecorderHotkey(); }
 		if (g_WasInGame && (g_LastRoom == "r_inside_tent" || g_ShopWindow)) ManageShopWindow(g_LastRoom);
 		// cheap per-event work: egg rooms need the egg removed before the player touches it
 		if (!g_LastRoom.empty() && EggRoomFor(g_LastRoom) && g_WasInGame)
