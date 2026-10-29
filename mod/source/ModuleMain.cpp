@@ -34,7 +34,7 @@
 using namespace Aurie;
 using namespace YYTK;
 
-static constexpr const char* MOD_VERSION = "0.1.9";
+static constexpr const char* MOD_VERSION = "0.1.10";
 
 static YYTKInterface* g_Yytk = nullptr;
 static fs::path g_Dir;
@@ -1594,9 +1594,30 @@ static void ApplyFlagsFile()
 	}
 }
 
+// The Aurie/YYToolkit console only shows engine debug output (e.g. the game's own audio warnings); everything the
+// mod reports goes to mod.log and the client. Hide it a few seconds after start; F9 shows / hides it again.
+static void ConsoleHotkey(ULONGLONG Now)
+{
+	static ULONGLONG start = 0;
+	static bool hidden = false, f9 = false;
+	if (!start) start = Now;
+	HWND console = GetConsoleWindow();
+	if (!console) return;
+	if (!hidden && Now - start > 3000)
+	{
+		ShowWindow(console, SW_HIDE);
+		hidden = true;
+		Log("console window hidden (F9 shows it)");
+	}
+	bool key = (GetAsyncKeyState(VK_F9) & 0x8000) != 0;
+	if (key && !f9) ShowWindow(console, IsWindowVisible(console) ? SW_HIDE : SW_SHOW);
+	f9 = key;
+}
+
 static void Tick()
 {
 	ULONGLONG now = GetTickCount64();
+	ConsoleHotkey(now);
 
 	bool f5 = (GetAsyncKeyState(VK_F5) & 0x8000) != 0;
 	if (f5 && !g_F5) DumpInfoScripts();

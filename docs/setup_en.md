@@ -112,5 +112,7 @@ Flags the game sets that are not mapped to locations yet are listed in `unknown.
   highest level can't be forged again (the upgrades themselves come from the multiworld).
 - Test helpers: **F10** adds 10,000 currency; **F7** writes a snapshot of menu/map values (f7_dump_N.txt) for bug reports;
   **F8** starts/stops a movement recording (move_N.csv) for logic reports.
+- The Aurie/YYToolkit console window is hidden a few seconds after the game starts (it only shows engine
+  debug output); press **F9** to show or hide it.
 - Press **F3** inside a tent to go back to the tent's exit (the shop ledges need Climb or Slingshot to leave).
   Tent Travel is unlocked from the start by default for the same reason.

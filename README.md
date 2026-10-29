@@ -8,6 +8,7 @@ Well Dweller Client) and a game mod for [Aurie](https://github.com/AurieFramewor
 > the Discord - see "Testing with Logic Test" in the [setup guide](docs/setup_en.md).
 
 - Setup, client commands and in-game features: [docs/setup_en.md](docs/setup_en.md)
+- What's new: [RELEASE_NOTES.md](RELEASE_NOTES.md)
 - Game mod source and build steps: [mod/README.md](mod/README.md)
 
 ## Quick start
