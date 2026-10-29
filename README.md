@@ -56,8 +56,8 @@ Up to 620 locations, depending on your options.
 | Trinket Point purchases in the shop | `shop_trinket_point_checks` | 0-100 |
 
 ## Items
-- **Abilities:** Matchstick, Slingshot, Progressive Climb (Climb, then Endless Climb), Wind Ride, Hover, Wall Sling,
-  Soar, Water Vessel, Torpedo, Tent Travel.
+- **Abilities:** Slingshot, Progressive Climb (Climb, then Endless Climb), Wind Ride, Hover, Wall Sling,
+  Soar, Water Vessel, Torpedo, Tent Travel. (You always start with the Matchstick.)
 - **Key items:** Golden Feathers (7 open the Queen's Castle), Elevator Parts, Pearls, Looter Parts, Spirits,
   Spirit Fragments, Flight Time Upgrades, Golden Gate Key, Food, Witch Burning Ticket.
 - **Trinkets:** all 32, plus Trinket Upgrades when Forge Checks are on.
@@ -70,7 +70,6 @@ Up to 620 locations, depending on your options.
 | Option | Default | What it does |
 |---|---|---|
 | `goal` | queen | queen / true_ending / secret_treasure |
-| `matchstick` | early | start_with / early (shuffled into your own early locations) / shuffled |
 | `tent_travel` | start_with | start_with / shuffled |
 | `tent_unlocks` | vanilla | vanilla / all_unlocked / shuffled (each tent is an item) |
 | `skip_intro` | on | A new game starts in the Night Garden |
@@ -98,6 +97,13 @@ Up to 620 locations, depending on your options.
   shop, workshop and map station are in every tent from the start, **F3** in a tent takes you to its exit.
 - **Logic:** checked room by room against the game's own geometry and play-tested, so each location asks for the
   abilities it really needs.
+
+## Known issues
+- The `true_ending` goal is not detected automatically yet: use `/goal` in the client.
+- Shop checks come into logic later than you can actually buy them (on purpose, so the shop doesn't fill the
+  first spheres).
+- The Aurie/YYToolkit console is hidden a few seconds after the game starts (it only shows engine debug output,
+  such as harmless sound warnings); press **F9** to show it again.
 
 ## Client
 `/game_dir`, `/claim`, `/wd_status`, `/resync`, `/goal`, `/why <location>`, `/logic`, `/breaklog on|off` - see the

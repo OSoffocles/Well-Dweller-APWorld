@@ -443,6 +443,9 @@ _add_tags(("Desiccated Castle: Spirit (AC_07)", "Desiccated Castle: Big Vessel (
 # AC_33's vessels were in the Soar/Slingshot part of the castle; keep that requirement in their own region.
 _add_tags(("Desiccated Castle: Big Vessel (AC_33)", "Desiccated Castle: Vessel (AC_33)"), "alts:soar|sling")
 
+# The Workshop Token inside the tent: the first tent (AN_04) is past the Matchstick.
+_add_tags(("The Well: Workshop Token (r_inside_tent)",), "hit")
+
 # Checks reached in a different region than their area/room default (castle checks
 # gettable with Climb alone, outside the Soar/Slingshot part).
 LOCATION_REGION = {"Desiccated Castle: Big Vessel (AC_04)": "Desiccated Castle Lower",

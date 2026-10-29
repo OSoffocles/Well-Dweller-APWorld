@@ -15,18 +15,6 @@ class Goal(Choice):
     default = 0
 
 
-class MatchstickMode(Choice):
-    """How you get the Matchstick, your weapon.
-    start_with: you start with it.
-    early: it is shuffled, but always placed in your own early locations.
-    shuffled: it can be anywhere in the multiworld."""
-    display_name = "Matchstick"
-    option_start_with = 0
-    option_early = 1
-    option_shuffled = 2
-    default = 1
-
-
 class TentTravel(Choice):
     """How you get Tent Travel (fast travel between tents).
     start_with: unlocked from the start (recommended: the tent shops sit on a ledge you need Climb or
@@ -268,7 +256,6 @@ class DeathWish(Range):
 @dataclass
 class WellDwellerOptions(PerGameCommonOptions):
     goal: Goal
-    matchstick: MatchstickMode
     tent_travel: TentTravel
     tent_unlocks: TentUnlocks
     skip_intro: SkipIntro

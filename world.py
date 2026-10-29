@@ -249,7 +249,9 @@ class WellDwellerWorld(World):
             region = TENT_ROOM_REGION.get(room) or TENT_REGION.get(room[:2])
             if not region:
                 continue
-            needs = (("Tent Travel", item) if shuffled else ("Tent Travel",)) + TENT_AREA_NEEDS.get(region, ())
+            # Teleporting starts inside a tent, and the first tent (AN_04) can't be reached without the Matchstick.
+            needs = (("Tent Travel", item) if shuffled else ("Tent Travel",)) + ("Matchstick",) + \
+                TENT_AREA_NEEDS.get(region, ())
             menu.connect(self.multiworld.get_region(region, p), f"Teleport: {item}",
                          lambda s, needs=needs: s.has_all(needs, p))
 
@@ -286,29 +288,17 @@ class WellDwellerWorld(World):
         pool: list[str] = []
         for name, d in ITEMS.items():
             pool += [name] * d.count
-        if o.matchstick == o.matchstick.option_start_with:
-            pool.remove("Matchstick")
-            self.multiworld.push_precollected(self.create_item("Matchstick"))
-        elif o.matchstick == o.matchstick.option_early:
-            self.multiworld.local_early_items[self.player]["Matchstick"] = 1
+        # You always start with the Matchstick: nothing past its own spot in the Night Garden can be reached without it.
+        pool.remove("Matchstick")
+        self.multiworld.push_precollected(self.create_item("Matchstick"))
         if o.lever_items:
             # the AN_06 lever opens the lower Night Garden: without it early there is hardly anything to explore.
-            # Without the Matchstick at the start the first sphere is only two locations, so it is given right away.
-            if o.matchstick == o.matchstick.option_start_with:
-                self.multiworld.local_early_items[self.player][NG_GATE_LEVER] = 1
-            else:
-                self.multiworld.push_precollected(self.create_item(NG_GATE_LEVER))
-        if o.matchstick == o.matchstick.option_shuffled and \
-                (o.tent_travel == o.tent_travel.option_shuffled or o.lever_items):
-            # the first sphere is only two locations without it: keep it shuffled across the multiworld,
-            # but in sphere 1
-            self.multiworld.early_items[self.player]["Matchstick"] = 1
+            self.multiworld.local_early_items[self.player][NG_GATE_LEVER] = 1
         if o.forge_checks:
             for name, copies in UPGRADE_ITEMS.items():
                 pool += [name] * copies
         if o.lever_items:
-            pool += [lv for lv in LEVER_ITEMS.values()
-                     if not (lv == NG_GATE_LEVER and o.matchstick != o.matchstick.option_start_with)]
+            pool += list(LEVER_ITEMS.values())
         if o.tent_unlocks == o.tent_unlocks.option_shuffled:
             pool += [t for t in TENT_ITEMS if t != STARTING_TENT]
             self.multiworld.push_precollected(self.create_item(STARTING_TENT))
@@ -367,7 +357,7 @@ class WellDwellerWorld(World):
     def fill_slot_data(self) -> dict[str, Any]:
         o = self.options
         return {
-            "goal": int(o.goal), "matchstick": int(o.matchstick), "tent_travel": int(o.tent_travel),
+            "goal": int(o.goal), "matchstick": 0, "tent_travel": int(o.tent_travel),
             "lever_checks": bool(o.lever_checks), "vessel_checks": bool(o.vessel_checks),
             "time_trial_checks": bool(o.time_trial_checks), "forge_checks": bool(o.forge_checks),
             "time_trial_time": int(o.time_trial_time),

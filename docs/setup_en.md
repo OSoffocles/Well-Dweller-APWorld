@@ -103,8 +103,7 @@ Flags the game sets that are not mapped to locations yet are listed in `unknown.
   Death Link Amnesty (deaths before one is sent) and Death Wish (Death Links received before one kills you).
 - Option `lever_items` (hard / long, Death's Door style): pulling a lever sends its check, its gate opens when
   the lever's item arrives (the room resets and puts you back where you stood if you pull a lever you don't have
-  the item for). A lever opened by its item sends its own check when you first visit its room. When you don't
-  start with the Matchstick, the AN_06 lever item (the gate to the lower Night Garden) is given at the start.
+  the item for). A lever opened by its item sends its own check when you first visit its room.
   The castle gate levers and the three levers that free Ilda's siblings always work as normal.
 - Option `time_trial_time` (100-300%): more time for the time trials, handy when the logic sends you there
   before you have the abilities a trial was designed for.
