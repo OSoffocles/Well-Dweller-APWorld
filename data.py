@@ -221,7 +221,7 @@ _named(49, "Midnight Drench: Golden Feather (Seven Sons)", "Midnight Drench", "K
 # post-game
 _named(60, "Queen's Castle: The Queen's Coin", "Queen's Chamber", "Post-game")
 _named(61, "Queen's Castle: Soar (Trinket Door)", "Queen's Chamber", "Post-game", ("trinkets32",), "wake_fly")
-_named(62, "Queen's Castle: Mysterious Markings", "Queen's Chamber", "Post-game", ("soar",))
+_named(62, "Queen's Castle: Mysterious Markings", "Queen's Chamber", "Post-game", ("trinkets32", "soar"))  # behind the Trinket Door too
 _named(63, "Dollmaker's House: Spirit Fragment", "Dollmaker's House", "Post-game", ("soar",), "shard_dh")
 _named(64, "Night Garden: Spirit Fragment", "Night Garden", "Post-game", ("soar",), "shard_garden")
 _named(65, "Autumn Forest: Spirit Fragment", "Autumn Forest", "Post-game", ("soar",), "shard_fall")
@@ -348,6 +348,10 @@ LOCATION_TAGS: dict[str, tuple[str, ...]] = {
     "Autumn Forest: Vessel (AF_13 #2)": ("hover",),
     "Autumn Forest: Trinket Slot (AF_02)": ("climb_hover",),     # Climb + Hover; Slingshot doesn't matter
     "Autumn Forest: Workshop Token (AF_30)": ("hover_climb_sw",),  # Hover + (Climb with Slingshot/Wall Sling, or Soar)
+    "Autumn Forest: Blue Bow": ("alts:sling",),                  # AF_99 wheel mini game: Slingshot only
+    "Autumn Forest: Trinket Slot (AF_99)": ("alts:sling",),     # same wheel mini game
+    "Autumn Forest: Spirit (AF_22)": ("alts:sling|soar",),       # spikes: Climb / Wall Sling no use; Slingshot or Soar
+    "Desiccated Castle: Trinket Slot (AC_22)": ("alts:sling",),  # Slingshot needed
     "Burial Vault: Trinket Slot (AT_18)": ("hover_climb_ws",),   # needs Hover on top of Climb + Wall Sling
     "Dollmaker's House: Page (The Dollmaker, AU_20)": ("hover_climb_ws",),
     "Dollmaker's House: Spirit (AU_04)": ("hover_climb_ws",),

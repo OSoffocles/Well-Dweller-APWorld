@@ -55,7 +55,7 @@ This alpha is tested with palex00's **Logic Test** world, which stops you exactl
 - `/claim` - bind the loaded save to your slot (for a save that was not started fresh).
 - `/wd_status` - show what the game mod reports.
 - `/resync` - send every check the game has reported again.
-- `/goal` - mark your goal as completed by hand (the Queen and secret treasure goals are detected automatically).
+- `/goal` - mark your goal as completed by hand (all goals are normally detected automatically).
 - `/why <part of a location name>` - is the location in logic, and which single item would put it in logic.
 - `/logic` - per area: how many unchecked locations are in logic.
 - `/breaklog on|off` - the local sequence-break log (default on): every check you get while it is out of logic is

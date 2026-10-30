@@ -108,6 +108,19 @@ def _pickup_of_kind(kind: str) -> int | None:
     return None
 
 
+# Game keys for checks that have no key of their own in the world data (they also work for seeds made
+# with older versions, whose slot_data has no entry for them).
+EXTRA_KEY_LOCATIONS: dict[str, int | None] = {
+    "deepboss": _loc("The Depths: The Colony"),                 # set when The Colony is beaten (AE_Boss)
+    "hungry_witch": _loc("Gravenvalley: Lida the Terrible"),    # AD_Bossrestart -> hungry_witch -> boss grave
+    "mirror_boss": _loc("Dollmaker's House: The Dollmaker"),    # AU_Bossrestart -> mirror_boss -> Magda (Wall Sling)
+    "silverdoll": _loc("Queen's Castle: Metal Doll"),           # AQ_14restart -> boss grave -> silverdoll
+    "discount": _loc("Queen's Castle: The Queen's Coin"),       # after the Queen: the coin gives the shop discount
+    # The Barge's Endless Climb is only "granted" if you don't own it yet: count it after the fight too
+    "postdeepboss": _loc("The Depths: Barge (Endless Climb)"),
+}
+
+
 # "grant <var> <room>" lines from the mod: the game handed out something the multiworld owns.
 GRANT_LOCATIONS: dict[str, int | None] = {
     "up_sling": _loc("Hunter's Cabin: Slingshot Egg"),
@@ -206,7 +219,7 @@ class WellDwellerCommandProcessor(ClientCommandProcessor):
         return True
 
     def _cmd_goal(self) -> bool:
-        """Mark your goal as completed by hand (the Queen and secret treasure goals are detected automatically)."""
+        """Mark your goal as completed by hand (all goals are normally detected automatically)."""
         ctx: WellDwellerContext = self.ctx  # type: ignore[assignment]
         asyncio.create_task(ctx.send_goal())
         return True
@@ -310,6 +323,8 @@ class WellDwellerContext(CommonContext):
         self.state_vars: dict[str, str] = {}
         self.unknown_keys: set[str] = set()
         self.queen_beaten = False   # the game sets "beat_queen" after the Queen fight (goal: queen)
+        self.flock_returned = False  # the game sets "final_flock" when the 5th Spirit Fragment is returned (goal: final_flock)
+        self.treasure_room = False   # been past the Trinket Door (AQ_44/AQ_45) this session (goal: treasure)
         self.unmapped_grants: set[str] = set()
         self.warned_trinkets: set[str] = set()
         self.claim_requested = False
@@ -378,6 +393,8 @@ class WellDwellerContext(CommonContext):
             self.checks_offset = 0
             self.last_items_text = ""
             self.queen_beaten = False
+            self.flock_returned = False
+            self.treasure_room = False
             if self.slot_data.get("death_link"):
                 asyncio.create_task(self.update_death_link(True))
             shop = [LOCATION_NAME_TO_ID[n] for n in ALL_LOCATIONS
@@ -690,8 +707,12 @@ class WellDwellerContext(CommonContext):
                 key = line.split(" ", 1)[1].strip()  # keys can contain spaces ("Night Garden")
                 if key == "beat_queen":
                     self.queen_beaten = True
+                elif key == "final_flock":
+                    self.flock_returned = True
                 elif key in self.location_keys:
                     found.add(self.location_keys[key])
+                elif EXTRA_KEY_LOCATIONS.get(key) is not None:
+                    found.add(EXTRA_KEY_LOCATIONS[key])
                 elif key not in self.unknown_keys:
                     self.unknown_keys.add(key)
                     self.log_unknown(f"key {key}")
@@ -716,6 +737,8 @@ class WellDwellerContext(CommonContext):
                 if name:
                     found.add(_loc(f"Looter's Shop: {name}"))
             elif len(parts) >= 3 and parts[0] == "grant":
+                if parts[1] == "up_boat" and parts[2] == "AK_Boss":   # the Water Vessel is the Creature's reward
+                    found.add(_loc("The Docks: Creature from the Deep"))
                 loc = self.grant_location(parts[1], parts[2], parts[3:])
                 if loc is not None:
                     found.add(loc)
@@ -803,19 +826,53 @@ class WellDwellerContext(CommonContext):
         if potions:
             found |= {_loc(f"Looter's Shop: Flaming Vessel Upgrade {k}") for k in range(1, min(int(potions), 2) + 1)}
 
+        # The Tent Travel egg (AN_02) is gone once you own Tent Travel (start_with, or received before you got
+        # there): the game hides it when its own "tent_travel" key is set. Count the check on entering the room.
+        if self.state.get("room", "").strip() == "AN_02" and \
+                any(self.item_names.lookup_in_game(i.item) == "Tent Travel" for i in self.items_received):
+            found.add(_loc("Night Garden: Tent Travel"))
+
+        # Mysterious Markings (AQ_45, past the Trinket Door) set no flag we can see: count them on entering the room.
+        room = self.state.get("room", "").strip()
+        if room == "AQ_45":
+            found.add(_loc("Queen's Castle: Mysterious Markings"))
+        if room in ("AQ_44", "AQ_45"):   # the treasure room behind the Trinket Door
+            self.treasure_room = True
+
         rewards = self.var_number("spirits_collected_reward")
         if rewards:
             found |= {_loc(f"Spirit Nest: Reward {k}") for k in range(1, min(int(rewards), 20) + 1)}
         return found
 
+    def all_trinkets_received(self) -> bool:
+        """Every trinket received (equipping them is not needed: that would also need all the Trinket Points)."""
+        names = {self.item_names.lookup_in_game(i.item) for i in self.items_received}
+        return all(t in names for t in TRINKETS)
+
+    def received_count(self, item: str) -> int:
+        return sum(1 for i in self.items_received if self.item_names.lookup_in_game(i.item) == item)
+
     def goal_reached(self) -> bool:
         goal = int(self.slot_data.get("goal", 0))
-        if goal == 0:   # queen: the game sets "beat_queen" when she is defeated
-            return self.queen_beaten
-        if goal == 2 and self.state_live and self.state.get("save") == "ok":  # secret treasure: every trinket received and equipped
-            names = {self.item_names.lookup_in_game(i.item) for i in self.items_received}
-            active = self.state_vars.get("upgrade_list_active", "")
-            return all(t in names for t in TRINKETS) and active.count("1") >= len(TRINKETS)
+        # queen: the game sets "beat_queen" when she is defeated
+        queen = self.queen_beaten
+        # treasure: all 32 trinkets and the Trinket Door opened (been in the treasure room, or one of its checks sent)
+        door = self.treasure_room or any(_loc(n) in self.checked_locations for n in
+                                         ("Queen's Castle: Soar (Trinket Door)", "Queen's Castle: Mysterious Markings"))
+        treasure = self.all_trinkets_received() and door
+        # final flock: all 20 spirits and 5 Spirit Fragments received, and the fragments returned ("final_flock").
+        # The game itself only counts the fragments picked up in the world, so the items are checked here.
+        flock = self.flock_returned and self.received_count("Spirit") >= 20 and self.received_count("Spirit Fragment") >= 5
+        if goal == 0:
+            return queen
+        if goal == 1:   # completionist
+            return queen and treasure and flock
+        if goal == 2:
+            return treasure
+        if goal == 3:
+            return flock
+        if goal == 4:   # any
+            return queen or treasure or flock
         return False
 
 

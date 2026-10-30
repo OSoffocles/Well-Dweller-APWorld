@@ -257,14 +257,21 @@ class WellDwellerWorld(World):
 
     def _add_goal_event(self) -> None:
         p, goal = self.player, self.options.goal
-        if goal == goal.option_queen:
-            region, rule = "Queen's Throne", lambda s: s.has("Matchstick", p)
-        elif goal == goal.option_true_ending:
-            # beating the Queen may also be needed for the true ending: required too (forgiving)
-            region, rule = "Night Garden", lambda s: s.has("Spirit", p, 20) and s.has("Spirit Fragment", p, 5) and \
-                s.can_reach_region("Queen's Throne", p) and s.has("Matchstick", p)
-        else:
-            region, rule = "Night Garden", lambda s: all(s.has(t, p) for t in TRINKETS)
+
+        def queen(s):      # The Queen
+            return s.can_reach_region("Queen's Throne", p) and s.has("Matchstick", p)
+
+        def treasure(s):   # all 32 trinkets and the Trinket Door (treasure room) opened
+            return all(s.has(t, p) for t in TRINKETS) and s.can_reach_region("Queen's Chamber", p)
+
+        def flock(s):      # all 20 spirits and the 5 Spirit Fragments, returned at the Spirit Nest
+            return s.has("Spirit", p, 20) and s.has("Spirit Fragment", p, 5) and s.has("Matchstick", p) and \
+                s.can_reach_region("Night Garden Lower", p)
+
+        rules = {goal.option_queen: queen, goal.option_treasure: treasure, goal.option_final_flock: flock,
+                 goal.option_completionist: lambda s: queen(s) and treasure(s) and flock(s),
+                 goal.option_any: lambda s: queen(s) or treasure(s) or flock(s)}
+        region, rule = "Night Garden", rules[goal.value]
         r = self.multiworld.get_region(region, p)
         ev = WellDwellerLocation(p, "Goal", None, r)
         ev.access_rule = rule

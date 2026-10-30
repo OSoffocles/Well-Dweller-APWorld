@@ -21,11 +21,18 @@ Well Dweller Client) and a game mod for [Aurie](https://github.com/AurieFramewor
 Release files: `well_dweller.apworld`, `WellDwellerAP.dll`, `Well Dweller.yaml` (template) and `Logic Test.yaml`.
 
 ## Goals
-| Goal | What you do | Detected |
-|---|---|---|
-| `queen` (default) | Defeat the Queen | automatically |
-| `true_ending` | Return all 20 Spirits and collect the 5 Spirit Fragments (and defeat the Queen) | `/goal` in the client |
-| `secret_treasure` | Collect and equip all 32 trinkets | automatically |
+All goals are detected automatically (`/goal` in the client stays as a fallback).
+
+| Goal | What you do |
+|---|---|
+| `queen` (default) | Defeat the Queen |
+| `treasure` | Get all 32 trinkets and open the treasure room door (the Trinket Door in the Queen's Castle) |
+| `final_flock` | Gather all 20 Spirits and the 5 Spirit Fragments, then return the fragments to the Spirit Nest |
+| `completionist` | `queen` + `treasure` + `final_flock` |
+| `any` | Any one of `queen`, `treasure` or `final_flock` |
+
+Trinkets only need to be collected, not equipped. YAMLs from before 0.2.1 still work: `true_ending` now means
+`completionist` and `secret_treasure` means `treasure`.
 
 ## Locations
 Up to 620 locations, depending on your options.
@@ -69,7 +76,7 @@ Up to 620 locations, depending on your options.
 ## Options
 | Option | Default | What it does |
 |---|---|---|
-| `goal` | queen | queen / true_ending / secret_treasure |
+| `goal` | queen | queen / treasure / final_flock / completionist / any |
 | `tent_travel` | start_with | start_with / shuffled |
 | `tent_unlocks` | vanilla | vanilla / all_unlocked / shuffled (each tent is an item) |
 | `skip_intro` | on | A new game starts in the Night Garden |
@@ -99,7 +106,9 @@ Up to 620 locations, depending on your options.
   abilities it really needs.
 
 ## Known issues
-- The `true_ending` goal is not detected automatically yet: use `/goal` in the client.
+- The game's own Spirit Nest counts the Spirit Fragments you picked up in the world, not the ones you received, so
+  the ending scene can play before you have all 5 fragment items. The `final_flock` goal only completes once you
+  have received them too.
 - Shop checks come into logic later than you can actually buy them (on purpose, so the shop doesn't fill the
   first spheres).
 - The Aurie/YYToolkit console is hidden a few seconds after the game starts (it only shows engine debug output,

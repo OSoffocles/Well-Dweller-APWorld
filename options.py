@@ -6,12 +6,19 @@ from Options import Choice, DeathLink, DefaultOnToggle, OptionSet, PerGameCommon
 class Goal(Choice):
     """What you need to do to finish.
     queen: defeat The Queen.
-    true_ending: return all 20 spirits and collect the 5 Spirit Fragments.
-    secret_treasure: collect all 32 trinkets."""
+    treasure: get all 32 trinkets and open the treasure room door (the Trinket Door in the Queen's Castle).
+    final_flock: gather all 20 spirits and the 5 Spirit Fragments, then return the fragments to the Spirit Nest.
+    completionist: queen + treasure + final_flock.
+    any: any one of queen, treasure or final_flock."""
     display_name = "Goal"
     option_queen = 0
-    option_true_ending = 1
-    option_secret_treasure = 2
+    option_completionist = 1
+    option_treasure = 2
+    option_final_flock = 3
+    option_any = 4
+    # names used before 0.2.1
+    alias_true_ending = 1
+    alias_secret_treasure = 2
     default = 0
 
 

@@ -34,7 +34,7 @@
 using namespace Aurie;
 using namespace YYTK;
 
-static constexpr const char* MOD_VERSION = "0.1.10";
+static constexpr const char* MOD_VERSION = "0.1.11";
 
 static YYTKInterface* g_Yytk = nullptr;
 static fs::path g_Dir;
@@ -356,6 +356,23 @@ static const PvarFlag PVAR_FLAGS[] = {
 	{ "torpedo", 9 },
 	{ "tent_travel", 10 },
 };
+// Boss fights the game skips once you own their reward: in this room the reward var is held at 0 until the
+// fight has been won, so the boss spawns even when the ability came from the multiworld. Winning sets the
+// var to 1 -> "grant <var> <room>" (the check) and the pvar, after which the var follows the items again.
+// The room before the boss holds it too, so it is already 0 when the boss room creates its objects.
+// Reward = the room where the var going up counts as the boss reward.
+struct RoomHidden { const char* Var; const char* Room; const char* DonePvar; bool Reward; };
+static const RoomHidden ROOM_HIDDEN[] = {
+	{ "up_boat", "AK_21", "ap_creature_done", false },  // the only way into AK_Boss
+	{ "up_boat", "AK_Boss", "ap_creature_done", true },  // Creature from the Deep -> Water Vessel (barge)
+};
+static const RoomHidden* HiddenFor(const char* Var, const std::string& Room)
+{
+	for (const RoomHidden& h : ROOM_HIDDEN)
+		if (Room == h.Room && std::string(Var) == h.Var && !PvarExists(h.DonePvar)) return &h;
+	return nullptr;
+}
+
 // consumables: applied once per received copy
 static void ApplyConsumable(int Id)
 {
@@ -400,6 +417,7 @@ static ULONGLONG g_InGameSince = 0;
 // be owned. The ability is lent for that scene (from the skip until a few seconds after arriving back
 // at the nest) and then taken back without counting as a vanilla grant.
 static std::string g_LentVar, g_LentRoom;
+static std::set<std::string> g_HiddenSet;   // ROOM_HIDDEN vars currently held at 0
 static ULONGLONG g_LentUntil = 0;   // 0 = not back at the nest yet
 static bool IsLent(const char* Var, ULONGLONG Now)
 {
@@ -1034,10 +1052,43 @@ static void EnforceItems(const std::string& Room)
 		if (IsLent(e.Var, nowTick)) continue;
 		if (!GetNumber(e.Var, cur)) continue;
 		double want = Count(e.ItemId) >= e.MinCount ? 1.0 : 0.0;
+		const RoomHidden* hidden = HiddenFor(e.Var, Room);
+		if (hidden && cur > 0 && !g_HiddenSet.count(e.Var))
+		{
+			// first tick in the room: our own enforced 1, not a win yet
+			g_HiddenSet.insert(e.Var);
+			SetNumber(e.Var, 0.0);
+			Log(std::string("holding ") + e.Var + " at 0 in " + Room + " (boss not beaten yet)");
+			cur = 0;
+		}
+		if (hidden && g_HiddenSet.count(e.Var))
+		{
+			if (cur > 0 && hidden->Reward)
+			{
+				AppendCheck(std::string("grant ") + e.Var + " " + Room);
+				Log(std::string("boss reward ") + e.Var + " in " + Room + " -> check");
+				PvarAddFlag(hidden->DonePvar);   // next tick releases it (incl. the player's copy)
+			}
+			else
+			{
+				want = 0.0;
+				cur = 0;   // outside the reward room it going up is not a win: just hold it at 0 again (no grant)
+				SetNumber(e.Var, 0.0);
+			}
+		}
+		else if (!hidden && g_HiddenSet.count(e.Var))
+		{
+			g_HiddenSet.erase(e.Var);   // left the room: back to the items (and the player's copy too)
+			if (havePlayer && want > 0 && g_Yytk->CallBuiltin("variable_instance_exists", { player, RValue(std::string_view(e.Var)) }).ToBoolean())
+				g_Yytk->CallBuiltin("variable_instance_set", { player, RValue(std::string_view(e.Var)), RValue(want) });
+			Log(std::string("released ") + e.Var + " after " + Room);
+		}
 		if (cur > want)
 		{
 			AppendCheck(std::string("grant ") + e.Var + " " + Room);
 			Log(std::string("vanilla grant of ") + e.Var + " in " + Room + " -> reset");
+			for (const RoomHidden& h : ROOM_HIDDEN)
+				if (Room == h.Room && h.Reward && std::string(e.Var) == h.Var) PvarAddFlag(h.DonePvar);
 		}
 		if (cur != want) SetNumber(e.Var, want);
 		if (havePlayer && g_Yytk->CallBuiltin("variable_instance_exists", { player, RValue(std::string_view(e.Var)) }).ToBoolean())
