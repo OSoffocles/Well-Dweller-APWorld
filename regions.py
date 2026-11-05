@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 from BaseClasses import Entrance, Region
 
 from .data import NG_GATE_LEVER, NG_AN04_LEVER, WEBDRENCH_GATE_LEVER
-from .rules import climb, height, sling, vert, wall_sling_gate, wsling
+from .rules import climb, endless, height, sling, vert, wall_sling_gate, wsling
 
 if TYPE_CHECKING:
     from .world import WellDwellerWorld
@@ -44,7 +44,8 @@ def create_regions(world: "WellDwellerWorld") -> None:
     if world.options.lever_items:
         link("Night Garden", "Night Garden Lower", lambda s: s.has(NG_AN04_LEVER, p) and height(s, p))
     link("Night Garden Lower", "Hunter's Cabin", lambda s: s.has("Matchstick", p))
-    link("Hunter's Cabin", "Hunter's Cabin Upper", lambda s: s.has("Soar", p) or sling(s, p) or climb(s, p))
+    # (the Slingshot alone doesn't get up there: player report after v0.2.1)
+    link("Hunter's Cabin", "Hunter's Cabin Upper", lambda s: s.has("Soar", p) or climb(s, p))
     # Climb from the AN_04 tent down to the Bog, or the one-time chase down the Well with the Food.
     link("Night Garden", "The Bog", lambda s: climb(s, p) or s.has("Food", p))
     link("The Bog", "Bog Interior", lambda s: height(s, p))
@@ -62,6 +63,12 @@ def create_regions(world: "WellDwellerWorld") -> None:
     # castle/Burial Vault side don't lead there, so that part needs the elevator.
     link("Drains Depths", "Midnight Drench West", lambda s: s.has("Elevator Part", p, 3) and s.has("Matchstick", p))
     link("Midnight Drench West", "Midnight Drench")
+    # Left of Lida the Terrible you can drop from Gravenvalley into Midnight Drench (AD_31 -> AL_09).
+    # That needs Lida beaten; with lever items, the AD_20 lever item opens the gate right of the Broken Bell (AD_17)
+    # from the other side, which leads to the same drop without the fight.
+    link("Gravenvalley Witch Burning", "Midnight Drench", lambda s: s.has("Matchstick", p))
+    if world.options.lever_items:
+        link("Gravenvalley Interior", "Midnight Drench", lambda s: s.has("Lever: Gravenvalley (AD_20)", p))
     link("Gravenvalley Interior", "Desiccated Castle West")
     link("Midnight Drench", "Desiccated Castle East")
     lower = link("Desiccated Castle East", "Desiccated Castle Lower",
@@ -77,13 +84,17 @@ def create_regions(world: "WellDwellerWorld") -> None:
          lambda s: s.has("Soar", p) or (climb(s, p) and s.has("Hover", p)))
     link("The Docks", "Whisper's Hut", lambda s: vert(s, p))
     link("The Docks", "The Depths", lambda s: s.has("Water Vessel", p))
-    link("Gravenvalley Interior", "Autumn Forest", lambda s: vert(s, p))
+    # The mushroom jumps in the entrance room need Hover with Soar (player report after v0.2.1, to confirm).
+    link("Gravenvalley Interior", "Autumn Forest",
+         lambda s: endless(s, p) or (climb(s, p) and wsling(s, p)) or s.has_all(("Soar", "Hover"), p))
     link("Night Garden Upper", "Autumn Forest", lambda s: vert(s, p) and climb(s, p) and s.has("Hover", p))
     link("Autumn Forest", "Whisper's Hut")
     link("Autumn Forest", "Forest King", lambda s: wsling(s, p) and climb(s, p))
     link("Night Garden Upper", "Lookout Tower", lambda s: s.has("Hover", p) and (sling(s, p) or climb(s, p)))
     link("Bog Interior", "Dollmaker's House", lambda s: vert(s, p))
-    link("Midnight Drench", "Burial Vault", lambda s: wall_sling_gate(s, p))
+    # Into the Burial Vault from Willow's side (AL_04 -> AT_01): the spike gap in the wall needs Climb + Wall Sling or
+    # Soar (Endless Climb, Hover and Wind Ride don't get past it).
+    link("Midnight Drench West", "Burial Vault", lambda s: s.has("Soar", p) or (climb(s, p) and wsling(s, p)))
     link("Night Garden East", "Webdrench Inn", lambda s: wall_sling_gate(s, p))
     # AW_01-AW_04 and the way out to the Golden Feather chase: behind the AW_05 lever gate (the boss-key gate under
     # the AW_06 lever only opens from below).

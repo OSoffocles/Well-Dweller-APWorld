@@ -3,7 +3,7 @@ from typing import Any, ClassVar
 from BaseClasses import Item, ItemClassification, Location, LocationProgressType, Tutorial
 from worlds.AutoWorld import WebWorld, World
 
-from .data import (TRINKET_MAX_LEVEL, TRINKET_INDEX_ORDER, UPGRADE_ITEMS, LEVER_ITEMS, lever_items_for, STARTING_TENT, TENT_ITEMS, TENTS, TENT_REGION, TENT_ROOM_REGION, TENT_AREA_NEEDS, NG_LOWER_ROOMS, NG_LOWER_NAMED, NG_EAST_ROOMS, NG_UPPER_ROOMS, WEBDRENCH_LOWER_ROOMS, WEBDRENCH_LOWER_NAMED, NG_GATE_LEVER, NG_AN40_LEVER, NG_LOWER_NAMED_LOCS, LOCATION_ROOMS, NAMED_ROOMS, ALL_LOCATIONS, EXTRA_LOCATIONS, FILLER_ITEM, ITEM_GROUPS, ITEM_NAME_TO_ID, ITEMS,
+from .data import (TRIAL_OF, TRINKET_MAX_LEVEL, TRINKET_INDEX_ORDER, UPGRADE_ITEMS, LEVER_ITEMS, lever_items_for, STARTING_TENT, TENT_ITEMS, TENTS, TENT_REGION, TENT_ROOM_REGION, TENT_AREA_NEEDS, NG_LOWER_ROOMS, NG_LOWER_NAMED, NG_EAST_ROOMS, NG_UPPER_ROOMS, WEBDRENCH_LOWER_ROOMS, WEBDRENCH_LOWER_NAMED, NG_GATE_LEVER, NG_AN40_LEVER, NG_LOWER_NAMED_LOCS, LOCATION_ROOMS, NAMED_ROOMS, ALL_LOCATIONS, EXTRA_LOCATIONS, FILLER_ITEM, ITEM_GROUPS, ITEM_NAME_TO_ID, ITEMS,
                    LOCATION_GROUPS, LOCATION_NAME_TO_ID, NAMED, PICKUP_LOCATIONS, TRINKETS)
 from .options import WellDwellerOptions
 from .regions import create_regions
@@ -85,6 +85,9 @@ class WellDwellerWorld(World):
         for name, d in EXTRA_LOCATIONS.items():
             if (d.group == "Levers" and (o.lever_checks or o.lever_items)) or (d.group == "Vessels" and o.vessel_checks):
                 out[name] = d
+        if not o.time_trial_checks:
+            # the checks behind a time trial's gate go together with the time trial itself
+            out = {n: d for n, d in out.items() if n not in TRIAL_OF}
         return out
 
     # Universal Tracker: rebuild this slot from slot_data instead of a YAML (same options, same shop prices).
@@ -231,6 +234,10 @@ class WellDwellerWorld(World):
             if d.group == "Forge":
                 # a forge check never holds a Workshop Token, so the forge cannot feed itself sphere after sphere
                 loc.item_rule = lambda item: not (item.player == self.player and item.name == "Workshop Token")
+            if name in TRIAL_OF:
+                # behind the trial's gate: the trial first
+                base, trial = rule, TRIAL_OF[name]
+                rule = (lambda s, b=base, t=trial: s.can_reach_location(t, self.player) and (b is None or b(s)))
             if rule:
                 loc.access_rule = rule
             region.locations.append(loc)

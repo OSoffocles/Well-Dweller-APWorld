@@ -189,7 +189,7 @@ def _named(nid: int, name: str, region: str, group: str, rule: tuple = (), key: 
 _named(1, "Night Garden: The Groundskeeper", "Night Garden", "Bosses", ("boss",), "groundskeeper")
 _named(2, "The Bog: The Swarm", "Bog Interior", "Bosses", ("boss",), "swarm_boss")
 _named(3, "Gravenvalley: Lida the Terrible", "Gravenvalley Witch Burning", "Bosses", ("boss",))
-_named(4, "The Drains: Lady of the Drains", "Midnight Drench", "Bosses", ("boss",), "drain_boss")
+_named(4, "The Drains: Lady of the Drains", "Midnight Drench West", "Bosses", ("boss",), "drain_boss")  # only by taking the Drains elevator down to her
 _named(5, "The Docks: Creature from the Deep", "The Docks", "Bosses", ("boss", "pearls"))
 _named(6, "The Depths: The Colony", "The Depths", "Bosses", ("boss", "torpedo"))
 _named(7, "Lookout Tower: Starsinger", "Lookout Tower", "Bosses", ("boss", "flight3"), "moon_boss")
@@ -273,6 +273,21 @@ for i, area in enumerate(TIME_TRIAL_AREAS):
     _named(400 + i, f"{area}: Time Trial", TIME_TRIAL_REGION[area], "Time Trials",
            ("climb_plus",) if area == "Night Garden" else ("climb_sh",) if area == "Desiccated Castle" else ())
 
+# Checks behind the gate a time trial opens. They belong to their trial: without time trial checks they are not
+# locations at all, with them they also need what the trial needs.
+TRIAL_REWARDS: dict[str, tuple[str, ...]] = {
+    # filled below from TRIAL_ROOMS (everything in the room) plus these extra checks
+    "The Docks": ("The Docks: Postage Stamp", "The Docks: Lever (AK_30)", "The Docks: Pearl (AK_31)"),
+    "Hunter's Cabin": ("Hunter's Cabin: Spirit (AH_15)", "Hunter's Cabin: Vessel (AH_15 #1)",
+                       "Hunter's Cabin: Vessel (AH_15 #2)"),
+    "Autumn Forest": ("Autumn Forest: Spirit (AF_13)", "Autumn Forest: Vessel (AF_13 #1)",
+                      "Autumn Forest: Vessel (AF_13 #2)"),
+    "The Drains": ("The Drains: Fish Hook", "The Drains: Vessel (AP_24 #1)", "The Drains: Vessel (AP_24 #2)"),
+}
+# every check in these rooms belongs to that area's time trial (Night Garden: also the AN_22 vessel outside the gate)
+TRIAL_ROOMS = {"The Bog": "AB_31", "Gravenvalley": "AD_26", "Night Garden": "AN_22", "Desiccated Castle": "AC_16",
+               "Midnight Drench": "AL_26", "The Docks": "AK_28", "Dollmaker's House": "AU_15"}
+
 # Region for pickups by area (conservative interiors, see rules.py).
 AREA_REGION = {
     "The Well": "The Well", "Night Garden": "Night Garden", "Hunter's Cabin": "Hunter's Cabin Upper",
@@ -297,7 +312,8 @@ FLIGHT_ROOMS = {"AG_11": "flight0", "AG_17": "flight1", "AG_24": "flight2"}
 
 # Night Garden locations whose exact needs are known (no blanket Climb).
 NG_EXACT = {"Night Garden: Trinket Slot (AN_28)", "Night Garden: Trinket Slot (AN_30)", "Night Garden: Big Vessel (AN_22)",
-            "Night Garden: Big Vessel (AN_24)", "Night Garden: Workshop Token (AN_50)"}
+            "Night Garden: Big Vessel (AN_24)", "Night Garden: Workshop Token (AN_50)",
+            "Night Garden: Trinket Slot (AN_20)"}   # the Slingshot is enough (its own "height" tag)
 # Per-location extra rules found in testing.
 LOCATION_TAGS: dict[str, tuple[str, ...]] = {
     "Night Garden: Spirit (AN_14)": ("height",),   # out of reach from the AN_14 tent floor
@@ -309,7 +325,7 @@ LOCATION_TAGS: dict[str, tuple[str, ...]] = {
     "Night Garden: Big Vessel (AN_24)": ("climb_ws",),
     "Night Garden: Trinket Slot (AN_28)": ("height",),   # from the AN_27 tent side
     "Night Garden: Trinket Slot (AN_30)": ("hover",),
-    "Night Garden: Workshop Token (AN_50)": ("climb_plus",),
+    "Night Garden: Workshop Token (AN_50)": ("climb_plus", "frogspa"),   # inside the frog spa
     # unreachable with no movement abilities, same as the AN_12 lever
     "Night Garden: Combat Room (AN_12)": ("height",), "Night Garden: Spirit (AN_12)": ("height",),
     # high up in the tent room
@@ -352,6 +368,7 @@ LOCATION_TAGS: dict[str, tuple[str, ...]] = {
     "Autumn Forest: Trinket Slot (AF_99)": ("alts:sling",),     # same wheel mini game
     "Autumn Forest: Spirit (AF_22)": ("alts:sling|soar",),       # spikes: Climb / Wall Sling no use; Slingshot or Soar
     "Desiccated Castle: Trinket Slot (AC_22)": ("alts:sling",),  # Slingshot needed
+    "Desiccated Castle: Trinket Slot (AC_02)": ("alts:climb|soar",),  # high up in AC_02: Climb or Soar
     "Burial Vault: Trinket Slot (AT_18)": ("hover_climb_ws",),   # needs Hover on top of Climb + Wall Sling
     "Dollmaker's House: Page (The Dollmaker, AU_20)": ("hover_climb_ws",),
     "Dollmaker's House: Spirit (AU_04)": ("hover_climb_ws",),
@@ -381,7 +398,6 @@ LOCATION_TAGS.update({
     "Autumn Forest: Trinket Slot (AF_24)": ("alts:soar|climb+wsling|endless+sling",),
     "Autumn Forest: Trinket Slot (AF_32)": ("alts:soar|climb+sling|climb+wsling",),
     "Burial Vault: Big Vessel (AT_13)": ("alts:soar|climb+hover|climb+sling|climb+wsling|sling+hover",),
-    "Burial Vault: Golden Needle": ("alts:soar|climb+wsling",),
     "Burial Vault: Rusted Compass": ("alts:soar|climb+sling|climb+wsling",),
     "Burial Vault: Vessel (AT_11)": ("alts:sling|soar|climb+hover|climb+wsling",),
     "Burial Vault: Workshop Token (AT_16)": ("alts:sling|soar|climb+hover|climb+wsling",),
@@ -416,11 +432,11 @@ LOCATION_TAGS.update({
     "Queen's Castle: Vessel (AQ_08)": ("alts:soar|climb+sling|climb+wsling|endless",),
     "Queen's Castle: Vessel (AQ_13)": ("alts:soar|climb+sling|climb+wsling",),
     "Queen's Castle: Workshop Token (AQ_24)": ("alts:soar|climb+wsling|climb+sling+hover",),
-    "The Bog: Big Vessel (AB_22)": ("alts:climb|soar|sling+hover",),
+    "The Bog: Big Vessel (AB_22)": ("alts:climb+hover|soar",),
     "The Bog: Big Vessel (AB_25)": ("alts:climb|soar",),
-    "The Bog: Spirit (AB_26)": ("alts:climb|soar",),
-    "The Bog: Vessel (AB_03)": ("alts:climb|soar|sling+hover",),
-    "The Bog: Vessel (AB_22)": ("alts:climb|soar|sling+hover",),
+    "The Bog: Spirit (AB_26)": ("alts:climb|soar|sling",),
+    "The Bog: Vessel (AB_03)": ("alts:climb|soar|sling",),
+    "The Bog: Vessel (AB_22)": ("alts:climb+hover|soar",),
 })
 
 # Extra tags, added on top of any existing ones.
@@ -449,14 +465,68 @@ _add_tags(("Desiccated Castle: Big Vessel (AC_33)", "Desiccated Castle: Vessel (
 
 # The Workshop Token inside the tent: the first tent (AN_04) is past the Matchstick.
 _add_tags(("The Well: Workshop Token (r_inside_tent)",), "hit")
+# Player reports after v0.2.1 (Soar alone does less than the terrain model assumed):
+# Hunter's Cabin race (AH_15): the moving blocks can't be passed with Soar alone.
+_add_tags(("Hunter's Cabin: Spirit (AH_15)", "Hunter's Cabin: Vessel (AH_15 #1)", "Hunter's Cabin: Vessel (AH_15 #2)"),
+          "alts:climb")
+# Gravenvalley: the way to the Witch Burning Ticket area (past AD_24) needs the Slingshot on top of Climb, Soar
+# or Hover (Soar + Hover alone don't get past AD_24).
+_add_tags(("Gravenvalley: Lever (AD_12)", "Gravenvalley: Spirit (AD_12)", "Gravenvalley: Lever (AD_24)",
+           "Gravenvalley: Trinket Slot (AD_24)", "Gravenvalley: Workshop Token (AD_28)", "Gravenvalley: Witch Burning Ticket",
+           "Gravenvalley: Page (The Lookout Tower, AD_30)"), "alts:sling+climb|sling+soar|sling+hover")
+# Night Garden AN_16 lever: only reached through the Drains (Climb or Soar).
+_add_tags(("Night Garden: Lever (AN_16)",), "alts:climb|soar")
+# The Docks, right side: Soar alone doesn't get past these rooms.
+_add_tags(("The Docks: Lever (AK_10)", "The Docks: Lever (AK_14)", "The Docks: Lever (AK_25)", "The Docks: Spirit (AK_25)",
+           "The Docks: Combat Room (AK_22)", "The Docks: Vessel (AK_23)", "The Docks: Nails with Twine",
+           "The Docks: Time Trial"), "alts:climb+hover")
+_add_tags(("The Docks: Lever (AK_30)", "The Docks: Pearl (AK_31)", "The Docks: Postage Stamp",
+           "The Docks: Trinket Slot (AK_28)", "The Docks: Vessel (AK_28 #1)", "The Docks: Vessel (AK_28 #2)"),
+          "alts:climb+sling+hover")
+_add_tags(("The Docks: Workshop Token (AK_18)",), "alts:climb")
+# Behind the golden gates: need the Golden Gate Key like the Looter Parts there.
+_add_tags(("Desiccated Castle: Lever (AC_35)", "Desiccated Castle: Lever (AC_37)",
+           "The Bog: Vessel (AB_38 #1)", "The Bog: Vessel (AB_38 #2)", "The Bog: Lever (AB_38)", "The Bog: Lever (AB_39)",
+           "Gravenvalley: Trinket Slot (AD_36)", "Gravenvalley: Big Vessel (AD_37)", "Gravenvalley: Lever (AD_36)",
+           "The Drains: Trinket Slot (AP_33)"), "gatekey")
+# Drains AP_32-AP_35: Climb with the Slingshot or Wall Sling (Soar, Wind Ride and Hover don't do it).
+_add_tags(("The Drains: Lever (AP_32)", "The Drains: Trinket Slot (AP_33)", "The Drains: Looter Part (AP_35)"),
+          "alts:climb+sling|climb+wsling")
+# AP_30 lever: only after the Lady of the Drains (the Drains elevator).
+_add_tags(("The Drains: Lever (AP_30)",), "drainboss")
+_add_tags(("Desiccated Castle: Big Vessel (AC_04)", "Desiccated Castle: Vessel (AC_04)"), "alts:climb|soar")
+# AC_35 lever and AC_40 Looter Part: the Slingshot is needed (Soar, Hover and Wind Ride don't do it).
+_add_tags(("Desiccated Castle: Lever (AC_35)", "Desiccated Castle: Looter Part (AC_40)"), "alts:sling")
+# Bog golden gate area (AB_38, AB_39, AB_42): spikes along the bottom, so Climb is needed (Soar doesn't do it).
+# Climb alone isn't enough here: Wall Sling with it, or Soar.
+_add_tags(("Night Garden: Trinket Slot (AN_18)", "Hunter's Cabin: Workshop Token (AH_13)"), "alts:climb+wsling|soar")
+# Bog AB_12 Dollmaker page: Climb + Wall Sling or Soar (its "wallsling" tag also allowed Endless Climb).
+_add_tags(("The Bog: Page (The Dollmaker, AB_12)",), "alts:climb+wsling|soar")
+# Dollmaker's House AU_07-AU_09 and the AU_11 lever: Soar, or Climb with the Slingshot or Wall Sling
+# (Hover, Wind Ride and Endless Climb don't do it).
+_add_tags(("Dollmaker's House: Bird-Shaped Button", "Dollmaker's House: Combat Room (AU_07)", "Dollmaker's House: Lever (AU_08)",
+           "Dollmaker's House: Lever (AU_09)", "Dollmaker's House: Lever (AU_11)"), "alts:soar|climb+sling|climb+wsling")
+# AD_19 token and lever: Climb with Wall Sling or Slingshot, or Soar.
+_add_tags(("Gravenvalley: Workshop Token (AD_19)", "Gravenvalley: Lever (AD_19)"), "alts:climb+wsling|climb+sling|soar")
+# AH_18 (from the upper Hunter's Cabin tent; the gate blocks the way from below): Slingshot, Climb + Wall Sling or Soar.
+_add_tags(("Hunter's Cabin: Big Vessel (AH_18 #1)", "Hunter's Cabin: Lever (AH_18)", "Hunter's Cabin: Trinket Slot (AH_18)"),
+          "alts:sling|climb+wsling|soar")
+_add_tags(("The Bog: Vessel (AB_38 #1)", "The Bog: Vessel (AB_38 #2)", "The Bog: Lever (AB_38)", "The Bog: Lever (AB_39)",
+           "The Bog: Looter Part (AB_42)"), "alts:climb")
 
 # Checks reached in a different region than their area/room default (castle checks
 # gettable with Climb alone, outside the Soar/Slingshot part).
-LOCATION_REGION = {"Desiccated Castle: Big Vessel (AC_04)": "Desiccated Castle Lower",
+LOCATION_REGION = {"Desiccated Castle: Big Vessel (AC_04)": "Midnight Drench West",
+                   "Desiccated Castle: Vessel (AC_04)": "Midnight Drench West",   # same side as AC_02 (Willow's)
                    # reached from Midnight Drench (AL_37 -> AC_08 -> AC_07) with Climb + Wall Sling + Hover
                    "Desiccated Castle: Spirit (AC_07)": "Midnight Drench",
                    "Desiccated Castle: Big Vessel (AC_08)": "Midnight Drench",
-                   "Desiccated Castle: Burnt Shoelace": "Desiccated Castle Lower"}
+                   "Desiccated Castle: Burnt Shoelace": "Desiccated Castle Lower",
+                   # AC_02 slot: the gate to AC_03/AC_04 has its levers on the AC_02 side, so only from Willow's side
+                   # (AL_08 -> AC_01 -> AC_02), which needs the Drains elevator
+                   "Desiccated Castle: Trinket Slot (AC_02)": "Midnight Drench West",
+                   # AT_22/AT_23: right where the Food chase down the Well drops you in the Bog
+                   "Burial Vault: Vessel (AT_22)": "The Bog", "Burial Vault: Golden Needle": "The Bog"}
 
 PICKUP_LOCATIONS: dict[str, LocData] = {}
 for i, (area, label, key, room, kind, tags) in enumerate(PICKUPS):
@@ -570,3 +640,11 @@ LOCATION_NAME_TO_ID = {name: d.id for name, d in ALL_LOCATIONS.items()}
 LOCATION_GROUPS: dict[str, set[str]] = {}
 for name, d in ALL_LOCATIONS.items():
     LOCATION_GROUPS.setdefault(d.group, set()).add(name)
+
+
+# Time trial groups (see TRIAL_REWARDS / TRIAL_ROOMS above): location name -> its trial.
+TRIAL_OF: dict[str, str] = {n: f"{area}: Time Trial" for area, names in TRIAL_REWARDS.items() for n in names}
+for _area, _room in TRIAL_ROOMS.items():
+    for _n, _d in ALL_LOCATIONS.items():
+        if str(_d.key).split("-")[0] == _room and _d.group != "Time Trials":
+            TRIAL_OF[_n] = f"{_area}: Time Trial"

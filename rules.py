@@ -124,6 +124,14 @@ def tag_ok(tag: str, s: CollectionState, p: int, trinkets: list[str]) -> bool:
         return s.has("Matchstick", p)
     if tag == "gatekey":
         return s.has("Golden Gate Key", p)
+    if tag == "drainboss":
+        return s.has("Matchstick", p) and s.can_reach_location("The Drains: Lady of the Drains", p)
+    if tag == "frogspa":
+        # AN_50 frog spa: beat the Lady of the Drains, free the frogs at the bottom of the Drains (their gate lever
+        # needs the Slingshot, Climb + Wall Sling or Soar), talk to Willow in a tent; the way there needs Climb.
+        return climb(s, p) and s.has("Matchstick", p) and \
+            s.can_reach_location("The Drains: Lady of the Drains", p) and \
+            (sling(s, p) or wsling(s, p) or s.has("Soar", p))
     if tag == "pearls":
         return s.has("Pearl", p, 3)
     if tag == "torpedo":

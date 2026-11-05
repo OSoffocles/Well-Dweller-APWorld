@@ -395,6 +395,7 @@ class WellDwellerContext(CommonContext):
             self.queen_beaten = False
             self.flock_returned = False
             self.treasure_room = False
+            self.feed.clear()   # no item messages from an earlier seed on the HUD
             if self.slot_data.get("death_link"):
                 asyncio.create_task(self.update_death_link(True))
             shop = [LOCATION_NAME_TO_ID[n] for n in ALL_LOCATIONS

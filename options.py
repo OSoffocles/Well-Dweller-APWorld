@@ -74,7 +74,8 @@ class Vessels(Toggle):
 
 
 class TimeTrials(Toggle):
-    """Completing each of the 10 time trials is a check."""
+    """Completing each of the 10 time trials is a check, and so is everything behind (or next to) the gate each trial
+    opens: vessels, trinket slots, spirits and more. Off: none of these are checks."""
     display_name = "Time Trial Checks"
 
 

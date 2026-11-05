@@ -42,23 +42,23 @@ Up to 620 locations, depending on your options.
 | Bosses | 12 |
 | Ability eggs (Slingshot, Climb, Wind Ride, Hover, Wall Sling, Soar, ...) | 8 |
 | Key item spots (Golden Feathers, Golden Gate Key, Food, Witch Burning Ticket, ...) | 10 |
-| Trinkets found in the world | 23 |
-| Trinket Slots | 59 |
-| Workshop Tokens | 27 |
-| Spirits | 20 |
+| Trinkets found in the world | 21 |
+| Trinket Slots | 55 |
+| Workshop Tokens | 26 |
+| Spirits | 16 |
 | Spirit Nest rewards | 20 |
 | Pages | 23 |
 | Combat rooms | 15 |
 | Ilda's Siblings | 3 |
-| Looter Parts, Pearls, Elevator Parts, Flight Time Upgrades, Candied Eggs, Moon Songs, Matchstick, Torpedo, Oil Vial | 21 |
+| Looter Parts, Pearls, Elevator Parts, Flight Time Upgrades, Candied Eggs, Moon Songs, Matchstick, Torpedo, Oil Vial | 20 |
 | Looter's shop (trinkets, Flaming Vessel, Oil Vial) | 9 |
 | Post-game (Spirit Fragments and more) | 8 |
 
 | Optional | Option | Count |
 |---|---|---|
-| Levers | `lever_checks` | 103 |
-| Currency vessels | `vessel_checks` | 123 |
-| Time trials | `time_trial_checks` | 10 |
+| Levers | `lever_checks` | 102 |
+| Currency vessels | `vessel_checks` | 97 |
+| Time trials, and the checks next to the gate each trial opens | `time_trial_checks` | 10 + 13 (+ 26 vessels with `vessel_checks`, + 1 lever with `lever_checks`) |
 | Forge upgrades | `forge_checks` | 26 |
 | Trinket Point purchases in the shop | `shop_trinket_point_checks` | 0-100 |
 
@@ -83,7 +83,7 @@ Up to 620 locations, depending on your options.
 | `lever_checks` | off | First hit on each lever is a check |
 | `lever_items` | off | **Hard / long.** Gates only open when the lever's item arrives |
 | `vessel_checks` | off | First break of each currency vessel is a check |
-| `time_trial_checks` | off | Each time trial is a check |
+| `time_trial_checks` | off | Each time trial is a check, and so is everything next to the gate it opens (off: none of those are checks) |
 | `time_trial_time` | 100 | 100-300 % of the normal time trial time |
 | `forge_checks` | off | Each forge upgrade is a check; the upgrades come from the multiworld |
 | `shop_trinket_point_checks` / `shop_trinket_points_per_check` | 5 / 1 | Trinket Point purchases as checks |

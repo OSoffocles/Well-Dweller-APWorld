@@ -34,7 +34,7 @@
 using namespace Aurie;
 using namespace YYTK;
 
-static constexpr const char* MOD_VERSION = "0.1.11";
+static constexpr const char* MOD_VERSION = "0.1.12";
 
 static YYTKInterface* g_Yytk = nullptr;
 static fs::path g_Dir;
@@ -866,36 +866,39 @@ static RValue ShopInstance()
 }
 
 // Shows what the selected shop entry gives the multiworld (name and description in the shop window).
+// The game's own "sel" stays 0 and sel_ii is only kept up to date for trinkets (mod 0.1.11 logs), so the
+// other entries (6 Trinket Point, 7 Flaming Vessel, 8 Oil Vial) are told apart by the name the game writes
+// into sel_name when the selection changes; whatever we wrote ourselves is skipped.
 static void ShopShowItem(const RValue& Inst)
 {
-	// The selected entry: trinkets by sel_ii; the other entries (6 Trinket Point, 7 Flaming Vessel, 8 Oil Vial)
-	// by purchase_array[sel], because sel_ii is only kept up to date for trinkets.
+	static std::string written;   // the name we put into sel_name last
+	static int key = -1;          // g_ShopText key of the current selection
+	static int lastIi = -2;
+	RValue nm = g_Yytk->CallBuiltin("variable_instance_get", { Inst, RValue(std::string_view("sel_name")) });
 	RValue ii = g_Yytk->CallBuiltin("variable_instance_get", { Inst, RValue(std::string_view("sel_ii")) });
-	RValue sel = g_Yytk->CallBuiltin("variable_instance_get", { Inst, RValue(std::string_view("sel")) });
-	RValue items = g_Yytk->CallBuiltin("variable_instance_get", { Inst, RValue(std::string_view("purchase_array")) });
+	std::string name = nm.IsString() ? nm.ToString() : std::string();
 	int selIi = ii.IsNumberConvertible() ? static_cast<int>(ii.ToDouble()) : -1;
-	int selIdx = sel.IsNumberConvertible() ? static_cast<int>(sel.ToDouble()) : -1;
-	int entry = -1;
-	size_t n = 0;
-	if (selIdx >= 0 && items.IsArray() && AurieSuccess(g_Yytk->GetArraySize(items, n)) && static_cast<size_t>(selIdx) < n)
+	if (!name.empty() && name != written)
 	{
-		RValue* e = nullptr;
-		if (AurieSuccess(g_Yytk->GetArrayEntry(items, static_cast<size_t>(selIdx), e)) && e && e->IsNumberConvertible())
-			entry = static_cast<int>(e->ToDouble());
-	}
-	int key = (entry >= 6 && entry <= 9) ? entry : selIi;
-	static int lastSel = -2, lastIi = -2;
-	if (selIdx != lastSel || selIi != lastIi)
-	{
-		lastSel = selIdx; lastIi = selIi;
-		RValue nm = g_Yytk->CallBuiltin("variable_instance_get", { Inst, RValue(std::string_view("sel_name")) });
-		Log("shop selection: sel " + std::to_string(selIdx) + " -> entry " + std::to_string(entry) + ", sel_ii " +
-			std::to_string(selIi) + ", name '" + (nm.IsString() ? nm.ToString() : std::string("?")) + "'");
+		// a name the game wrote: the selection changed (or the window was just opened)
+		int k = selIi;
+		if (name.find("Trinket Slot") != std::string::npos) k = 6;
+		else if (name.find("Oil Vial") != std::string::npos) k = 8;
+		else if (name.find("Flaming") != std::string::npos || name.find("Vessel") != std::string::npos) k = 7;
+		if (k != key || selIi != lastIi)
+			Log("shop selection: '" + name + "', sel_ii " + std::to_string(selIi) + " -> entry " + std::to_string(k));
+		key = k; lastIi = selIi;
+		written.clear();
 	}
 	auto it = g_ShopText.find(key);
-	if (it == g_ShopText.end()) return;
+	if (it == g_ShopText.end())
+	{
+		written.clear();   // nothing to show: leave the game's own text
+		return;
+	}
 	g_Yytk->CallBuiltin("variable_instance_set", { Inst, RValue(std::string_view("sel_name")), RValue(std::string_view(it->second.first)) });
 	g_Yytk->CallBuiltin("variable_instance_set", { Inst, RValue(std::string_view("sel_des")), RValue(std::string_view(it->second.second)) });
+	written = it->second.first;
 }
 
 // Forge window (o_upgrade_trinkets): the "next level" text shows what the next forge check gives.
