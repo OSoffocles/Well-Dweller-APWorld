@@ -11,7 +11,7 @@ Well Dweller Client) and a game mod for [Aurie](https://github.com/AurieFramewor
 - Game mod source and build steps: [mod/README.md](mod/README.md)
 
 ## Quick start
-1. Install Aurie/YYToolkit for Well Dweller with the [Aurie Installer](https://github.com/AurieFramework/Aurie/releases)
+1. Install Aurie/YYToolkit for Well Dweller with the [Aurie Installer](https://github.com/AurieFramework/Aurie/releases/tag/v2.0.0b)
    and copy `WellDwellerAP.dll` to `<Well Dweller>\mods\aurie\`.
 2. Install [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases) 0.6.4 or newer, then double-click
    `well_dweller.apworld` (or copy it to Archipelago's `custom_worlds`).
