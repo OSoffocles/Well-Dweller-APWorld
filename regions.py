@@ -44,8 +44,8 @@ def create_regions(world: "WellDwellerWorld") -> None:
     if world.options.lever_items:
         link("Night Garden", "Night Garden Lower", lambda s: s.has(NG_AN04_LEVER, p) and height(s, p))
     link("Night Garden Lower", "Hunter's Cabin", lambda s: s.has("Matchstick", p))
-    # (the Slingshot alone doesn't get up there: player report after v0.2.1)
-    link("Hunter's Cabin", "Hunter's Cabin Upper", lambda s: s.has("Soar", p) or climb(s, p))
+    # Hover with Climb, or Soar (Climb or the Slingshot alone don't get up there)
+    link("Hunter's Cabin", "Hunter's Cabin Upper", lambda s: s.has("Soar", p) or (climb(s, p) and s.has("Hover", p)))
     # Climb from the AN_04 tent down to the Bog, or the one-time chase down the Well with the Food.
     link("Night Garden", "The Bog", lambda s: climb(s, p) or s.has("Food", p))
     link("The Bog", "Bog Interior", lambda s: height(s, p))
@@ -83,7 +83,8 @@ def create_regions(world: "WellDwellerWorld") -> None:
     link("Gravenvalley Interior", "The Docks",
          lambda s: s.has("Soar", p) or (climb(s, p) and s.has("Hover", p)))
     link("The Docks", "Whisper's Hut", lambda s: vert(s, p))
-    link("The Docks", "The Depths", lambda s: s.has("Water Vessel", p))
+    # the barge to the Depths leaves from the right side of the Docks (Climb + Hover to get there)
+    link("The Docks", "The Depths", lambda s: s.has("Water Vessel", p) and climb(s, p) and s.has("Hover", p))
     # The mushroom jumps in the entrance room need Hover with Soar (player report after v0.2.1, to confirm).
     link("Gravenvalley Interior", "Autumn Forest",
          lambda s: endless(s, p) or (climb(s, p) and wsling(s, p)) or s.has_all(("Soar", "Hover"), p))
@@ -95,6 +96,7 @@ def create_regions(world: "WellDwellerWorld") -> None:
     # Into the Burial Vault from Willow's side (AL_04 -> AT_01): the spike gap in the wall needs Climb + Wall Sling or
     # Soar (Endless Climb, Hover and Wind Ride don't get past it).
     link("Midnight Drench West", "Burial Vault", lambda s: s.has("Soar", p) or (climb(s, p) and wsling(s, p)))
+    # Endless Climb alone is enough here, so the wall_sling_gate rule stays
     link("Night Garden East", "Webdrench Inn", lambda s: wall_sling_gate(s, p))
     # AW_01-AW_04 and the way out to the Golden Feather chase: behind the AW_05 lever gate (the boss-key gate under
     # the AW_06 lever only opens from below).

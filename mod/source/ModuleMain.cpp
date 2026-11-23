@@ -34,7 +34,7 @@
 using namespace Aurie;
 using namespace YYTK;
 
-static constexpr const char* MOD_VERSION = "0.1.12";
+static constexpr const char* MOD_VERSION = "0.1.13";
 
 static YYTKInterface* g_Yytk = nullptr;
 static fs::path g_Dir;

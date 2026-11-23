@@ -11,7 +11,7 @@ from .data import SHOP_ENTRIES, VANILLA_SHOP_COSTS, CURRENCY_ESTIMATE, CURRENCY_
 
 MAX_BUDGET = CURRENCY_SHARE * sum(CURRENCY_ESTIMATE.values())
 FORGE_SPREAD = 0.9   # the last forge upgrade needs 90% of the map
-SHOP_START = 0.15      # no shop checks before 15% of the map is in reach ...
+SHOP_START = 0.05      # no shop checks before 5% of the map is in reach ...
 SHOP_EARLY_ABILITIES = 2   # ... and this many movement abilities (keeps the shop from filling the first spheres)
 SHOP_AFFORDABLE = 0.5  # shop_progression: affordable - only checks needing less than half the map hold progression
 SHOP_CAP = 0.95      # no shop check needs more than 95% of the map; one that would only holds filler
@@ -125,32 +125,28 @@ class WellDwellerWorld(World):
         return costs
 
     def _shop_needs(self, names: list[str]) -> dict[str, float]:
-        """Currency (at 1x) needed in logic for each shop check: every purchase that costs no more than it is
-        assumed to be bought first, so a check needs its own price plus all cheaper ones. Divided by the
-        Currency Multiplier. Trinket points past the first SHOP_POINTS_IN_LOGIC (filler only) come last and do not
-        add to the others. Nothing needs more than SHOP_CAP of the whole map; a check that would is filler only
-        (see _shop_capped)."""
+        """Currency (at 1x) needed in logic for each shop check: its own price. Things the shop sells one after
+        another (the Flaming Vessel upgrades, the trinket points) also need the earlier ones. Currency items are not
+        counted (they stay filler), so this is already on the safe side. Divided by the Currency Multiplier. Trinket
+        points past the first SHOP_POINTS_IN_LOGIC hold filler only. Nothing needs more than SHOP_CAP of the whole
+        map; a check that would is filler only (see _shop_capped)."""
         o = self.options
         costs = dict(zip(SHOP_ENTRIES, self._shop_costs()))
         per = int(o.shop_trinket_points_per_check)
-        buys, late = [], []   # (price, location name)
+        cap = SHOP_CAP * MAX_BUDGET
+        need = {}
+        self._shop_capped = set()
         for name in names:
             label = name.split(": ", 1)[1]
             if label.startswith("Trinket Point "):
-                k = int(label.rsplit(" ", 1)[1])
-                (late if k * per > SHOP_POINTS_IN_LOGIC else buys).append((costs["Trinket Point"] * per, name))
+                price = costs["Trinket Point"] * per * int(label.rsplit(" ", 1)[1])
             elif label.startswith("Flaming Vessel Upgrade"):
-                buys.append((costs["Flaming Vessel Upgrade"], name))
+                price = costs["Flaming Vessel Upgrade"] * int(label.rsplit(" ", 1)[1])
             elif label in costs:
-                buys.append((costs[label], name))
-        buys.sort(key=lambda b: (b[0], b[1]))
-        late.sort(key=lambda b: int(b[1].rsplit(" ", 1)[1]))
-        cap = SHOP_CAP * MAX_BUDGET
-        need, total = {}, 0
-        self._shop_capped = set()
-        for price, name in buys + late:
-            total += price
-            need[name] = total / max(1, int(o.currency_multiplier))
+                price = costs[label]
+            else:
+                continue
+            need[name] = price / max(1, int(o.currency_multiplier))
             if need[name] > cap:
                 need[name] = cap
                 self._shop_capped.add(name)
@@ -365,6 +361,19 @@ class WellDwellerWorld(World):
         out += [self.random.choice(traps) for _ in range(counts["traps"])]
         return out
 
+    def _currency_item_amount(self) -> int:
+        """Currency per "Currency" item, as sent to the game (it multiplies Currency items by the Currency Multiplier
+        too, so this is divided by it): all Currency items together are Currency Item Total percent of the shop."""
+        costs = dict(zip(SHOP_ENTRIES, self._shop_costs()))
+        shop_total = (sum(costs[t] for t in SHOP_ENTRIES[:6]) + costs["Oil Vial"] + 2 * costs["Flaming Vessel Upgrade"]
+                      + 100 * costs["Trinket Point"])
+        mine = [i.name for i in self.multiworld.itempool if i.player == self.player]
+        units = mine.count("Currency") + 5 * mine.count("Big Currency")
+        if not units:
+            return 0
+        per_item = shop_total * int(self.options.currency_item_total) / 100 / units
+        return max(0, int(round(per_item / max(1, int(self.options.currency_multiplier)))))
+
     def get_filler_item_name(self) -> str:
         return FILLER_ITEM
 
@@ -379,7 +388,7 @@ class WellDwellerWorld(World):
             "tent_unlocks": int(o.tent_unlocks), "skip_intro": bool(o.skip_intro), "lever_items": bool(o.lever_items),
             "shop_trinket_points_per_check": int(o.shop_trinket_points_per_check),
             "trinket_max_levels": [TRINKET_MAX_LEVEL[t] for t in TRINKET_INDEX_ORDER],
-            "currency_multiplier": int(o.currency_multiplier) * 100, "currency_item_amount": int(o.currency_item_amount),
+            "currency_multiplier": int(o.currency_multiplier) * 100, "currency_item_amount": self._currency_item_amount(),
             "shop_costs": self._shop_costs(),
             "death_link_amnesty": int(o.death_link_amnesty), "death_wish": int(o.death_wish),
             # every option, so the client can rebuild the logic for the in-game map tracker

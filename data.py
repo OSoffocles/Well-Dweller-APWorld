@@ -238,7 +238,7 @@ SHOP_ENTRIES = ["Bottle Cap", "Skull Keychain", "Glass Eye", "Rusted Thimble", "
                 "Trinket Point", "Flaming Vessel Upgrade", "Oil Vial"]
 VANILLA_SHOP_COSTS = [250, 350, 450, 550, 600, 800, 250, 750, 2000]
 # Estimated currency (at 1x) a normal pass through each region gives: enemies and vessels. Placeholder values until
-# currency_log.txt from test runs gives real numbers (kept low on purpose until then). The logic counts 75% of the regions you can reach.
+# currency_log.txt from test runs gives real numbers (kept low on purpose until then). The logic counts all of the regions you can reach.
 CURRENCY_ESTIMATE: dict[str, int] = {
     "Night Garden": 150, "Night Garden East": 75, "Night Garden Upper": 125, "Night Garden Lower": 150,
     "Hunter's Cabin": 75, "Hunter's Cabin Upper": 75, "The Bog": 125, "Bog Interior": 125,
@@ -248,7 +248,7 @@ CURRENCY_ESTIMATE: dict[str, int] = {
     "Forest King": 50, "Lookout Tower": 125, "Dollmaker's House": 125, "Burial Vault": 125, "Webdrench Inn": 125, "Webdrench Inn Lower": 50,
     "Queen's Castle": 150, "Queen's Throne": 0, "Queen's Chamber": 0,
 }
-CURRENCY_SHARE = 0.75
+CURRENCY_SHARE = 1.0
 for i, item in enumerate(SHOP):
     _named(100 + i, f"Looter's Shop: {item}", "Night Garden", "Shop", ("tentexit",))
 MAX_SHOP_POINT_CHECKS = 100   # the shop sells 100 trinket points
@@ -263,6 +263,11 @@ for i in range(FORGE_STEPS):
     # Willow's workshop is in every tent from the start; each forge purchase is a check (the upgrade itself
     # comes from the multiworld as a "Trinket Upgrade" item)
     _named(300 + i, f"Forge: Upgrade {i + 1}", "Night Garden", "Forge", (f"tokens{i + 1}", "upgradable", "tentexit"))
+# Abilities to beat each time trial (player reports), on top of reaching it.
+TIME_TRIAL_TAGS = {"Night Garden": ("alts:climb+wsling|climb+sling|soar+hover",), "Desiccated Castle": ("climb_sh",),
+                   "Gravenvalley": ("alts:climb+sling|climb+wsling",),
+                   "Hunter's Cabin": ("alts:climb+sling|climb+wsling|climb+hover",),
+                   "Autumn Forest": ("hover",)}
 TIME_TRIAL_AREAS = ["The Bog", "Night Garden", "Gravenvalley", "Desiccated Castle", "Midnight Drench",
                     "The Docks", "Hunter's Cabin", "Autumn Forest", "Dollmaker's House", "The Drains"]
 TIME_TRIAL_REGION = {"The Bog": "Bog Interior", "Night Garden": "Night Garden", "Gravenvalley": "Gravenvalley Interior",
@@ -271,7 +276,7 @@ TIME_TRIAL_REGION = {"The Bog": "Bog Interior", "Night Garden": "Night Garden", 
                      "Dollmaker's House": "Dollmaker's House", "The Drains": "Drains Depths"}
 for i, area in enumerate(TIME_TRIAL_AREAS):
     _named(400 + i, f"{area}: Time Trial", TIME_TRIAL_REGION[area], "Time Trials",
-           ("climb_plus",) if area == "Night Garden" else ("climb_sh",) if area == "Desiccated Castle" else ())
+           TIME_TRIAL_TAGS.get(area, ()))
 
 # Checks behind the gate a time trial opens. They belong to their trial: without time trial checks they are not
 # locations at all, with them they also need what the trial needs.
@@ -321,7 +326,7 @@ LOCATION_TAGS: dict[str, tuple[str, ...]] = {
     "Night Garden: Lever (AN_16)": ("height",),
     # room-by-room checks
     # "Night Garden: Vessel (AN_09)": reachable with only the Matchstick: no extra tag
-    "Night Garden: Page (The Lookout Tower, AN_11)": ("climb_sh",),
+    "Night Garden: Page (The Lookout Tower, AN_11)": (),   # Climb alone is enough
     "Night Garden: Big Vessel (AN_24)": ("climb_ws",),
     "Night Garden: Trinket Slot (AN_28)": ("height",),   # from the AN_27 tent side
     "Night Garden: Trinket Slot (AN_30)": ("hover",),
@@ -338,7 +343,7 @@ LOCATION_TAGS: dict[str, tuple[str, ...]] = {
     "The Bog: Big Vessel (AB_46)": ("climb_plus",), "The Bog: Vessel (AB_46)": ("climb_plus",),
     "The Bog: Vessel (AB_30)": ("climb_plus",),
     "Gravenvalley: Trinket Slot (AD_24)": ("climb_ws",),          # Climb + Slingshot is not enough
-    "Hunter's Cabin: Trinket (AH_05)": ("wsling_hover",),          # straight up under it: Soar, or Wall Sling on the left wall + Hover
+    "Hunter's Cabin: Trinket (AH_05)": ("alts:sling|soar|wsling+hover",),   # the Slingshot (intended), Soar, or Wall Sling + Hover
     "Hunter's Cabin: Workshop Token (AH_23)": ("alts:soar|endless|climb+sling|climb+wsling",),
     "Midnight Drench: Lever (AL_25)": ("hover_soar",),             # Hover should do it (not tested with Hover)
     "Midnight Drench: Lever (AL_31)": ("climb_hover_soar",),
@@ -380,7 +385,7 @@ LOCATION_TAGS: dict[str, tuple[str, ...]] = {
     "The Drains: Trinket Slot (AP_18)": ("soar",),                 # not with Climb + Hover; other combos unclear
     "Gravenvalley: Page (The Witch's Bargain, AD_10)": ("slingshot",),   # needs the Slingshot, Wall Sling isn't enough
     "Gravenvalley: Trinket Slot (AD_03)": ("climb_s",),                  # Climb + Slingshot, or Soar
-    # AP_28: Soar or Wind Ride to get there, plus Climb with Wall Sling or Slingshot
+    # AP_28: Wind Ride + Hover, plus Climb + Slingshot or Soar
     "The Drains: Elevator Part (AP_28)": ("ap28",), "The Drains: Big Vessel (AP_28)": ("ap28",),
     "The Drains: Vessel (AP_28)": ("ap28",),
 }
@@ -502,6 +507,18 @@ _add_tags(("Desiccated Castle: Lever (AC_35)", "Desiccated Castle: Looter Part (
 _add_tags(("Night Garden: Trinket Slot (AN_18)", "Hunter's Cabin: Workshop Token (AH_13)"), "alts:climb+wsling|soar")
 # Bog AB_12 Dollmaker page: Climb + Wall Sling or Soar (its "wallsling" tag also allowed Endless Climb).
 _add_tags(("The Bog: Page (The Dollmaker, AB_12)",), "alts:climb+wsling|soar")
+# Burial Vault AT_InsideTomb_after slot: Endless Climb alone is not enough; Climb + Wall Sling or Soar.
+_add_tags(("Burial Vault: Trinket Slot (AT_InsideTomb_after)",), "alts:climb+wsling|soar")
+_add_tags(("Autumn Forest: Page (The Dollmaker, AF_34)",), "boss")
+# Lookout Tower: these need Hover (Soar + Climb don't do it).
+_add_tags(("Lookout Tower: Spirit (AG_28)", "Lookout Tower: Lever (AG_28)", "Lookout Tower: Workshop Token (AG_17)",
+           "Lookout Tower: Flight Time Upgrade (AG_17)", "Lookout Tower: Lever (AG_15)",
+           "Lookout Tower: Page (The Lookout Tower, AG_13)", "Lookout Tower: Lever (AG_13)", "Lookout Tower: Vessel (AG_13)"),
+          "hover")
+# Autumn Forest, the part around the AF_20 tent and the Forest King (mushroom jumps): Hover needed.
+_add_tags(("Autumn Forest: Lever (AF_20)", "Autumn Forest: Lever (AF_21)", "Autumn Forest: Spirit (AF_22)",
+           "Autumn Forest: Lever (AF_24)", "Autumn Forest: Trinket Slot (AF_24)", "Autumn Forest: Forest King",
+           "Autumn Forest: Golden Feather (Forest King)", "Autumn Forest: Page (The Dollmaker, AF_34)"), "hover")
 # Dollmaker's House AU_07-AU_09 and the AU_11 lever: Soar, or Climb with the Slingshot or Wall Sling
 # (Hover, Wind Ride and Endless Climb don't do it).
 _add_tags(("Dollmaker's House: Bird-Shaped Button", "Dollmaker's House: Combat Room (AU_07)", "Dollmaker's House: Lever (AU_08)",
@@ -526,7 +543,14 @@ LOCATION_REGION = {"Desiccated Castle: Big Vessel (AC_04)": "Midnight Drench Wes
                    # (AL_08 -> AC_01 -> AC_02), which needs the Drains elevator
                    "Desiccated Castle: Trinket Slot (AC_02)": "Midnight Drench West",
                    # AT_22/AT_23: right where the Food chase down the Well drops you in the Bog
-                   "Burial Vault: Vessel (AT_22)": "The Bog", "Burial Vault: Golden Needle": "The Bog"}
+                   "Burial Vault: Vessel (AT_22)": "The Bog", "Burial Vault: Golden Needle": "The Bog",
+                   # the AC_02 side of the castle gates: only from Willow's side (the Drains elevator)
+                   "Desiccated Castle: Lever (AC_03 #2)": "Midnight Drench West",
+                   "Desiccated Castle: Lever (AC_05 #1)": "Midnight Drench West",
+                   # AH_05 trinket: from the lower part of the cabin with the Slingshot (intended way)
+                   "Hunter's Cabin: Trinket (AH_05)": "Hunter's Cabin",
+                   # behind the Forest King
+                   "Autumn Forest: Page (The Dollmaker, AF_34)": "Forest King"}
 
 PICKUP_LOCATIONS: dict[str, LocData] = {}
 for i, (area, label, key, room, kind, tags) in enumerate(PICKUPS):

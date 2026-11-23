@@ -114,8 +114,9 @@ class ShopTrinketPoints(Range):
 
 
 class CurrencyMultiplier(Range):
-    """Multiplies all currency you get: enemies, vessels and Currency items from the multiworld
-    (1 = normal, 2 = double). Shop checks come into logic sooner with a higher multiplier."""
+    """Multiplies the currency you pick up in the game: enemies and currency vessels (1 = normal, 2 = double).
+    Currency items from the multiworld are set by Currency Item Total instead. Shop checks come into logic sooner
+    with a higher multiplier."""
     display_name = "Currency Multiplier"
     range_start = 1
     range_end = 10
@@ -162,12 +163,16 @@ class ShopProgression(Choice):
     default = 0
 
 
-class CurrencyItemAmount(Range):
-    """How much currency one "Currency" item from the multiworld gives."""
-    display_name = "Currency Item Amount"
-    range_start = 50
-    range_end = 5000
-    default = 500
+class CurrencyItemTotal(Range):
+    """How much currency all "Currency" items from the multiworld add up to, in percent of everything the Looter's
+    shop sells at this seed's prices (the six trinkets, the Oil Vial, both Flaming Vessel upgrades and all 100 Trinket
+    Points). The amount is shared over however many Currency items your seed has ("Big Currency" counts as five),
+    so it stays the same whichever checks you turn on. 100 = exactly enough to buy everything; 0 = Currency items
+    give nothing."""
+    display_name = "Currency Item Total"
+    range_start = 0
+    range_end = 500
+    default = 150
 
 
 class ExtraTrinketPoints(Range):
@@ -280,7 +285,7 @@ class WellDwellerOptions(PerGameCommonOptions):
     shop_price_minimum: ShopPriceMinimum
     shop_price_maximum: ShopPriceMaximum
     shop_progression: ShopProgression
-    currency_item_amount: CurrencyItemAmount
+    currency_item_total: CurrencyItemTotal
     extra_trinket_points: ExtraTrinketPoints
     extra_workshop_tokens: ExtraWorkshopTokens
     extra_oil_vials: ExtraOilVials

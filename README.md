@@ -11,7 +11,7 @@ Well Dweller Client) and a game mod for [Aurie](https://github.com/AurieFramewor
 - Game mod source and build steps: [mod/README.md](mod/README.md)
 
 ## Quick start
-1. Install Aurie/YYToolkit for Well Dweller with the [AurieInstaller.exe under the v2 Assets](https://github.com/AurieFramework/Aurie/releases/tag/v2.0.0b) **NOT THE AURIE PATCHER**
+1. Install Aurie/YYToolkit for Well Dweller with the [Aurie Installer](https://github.com/AurieFramework/Aurie/releases/tag/v2.0.0b)
    and copy `WellDwellerAP.dll` to `<Well Dweller>\mods\aurie\`.
 2. Install [Archipelago](https://github.com/ArchipelagoMW/Archipelago/releases) 0.6.4 or newer, then double-click
    `well_dweller.apworld` (or copy it to Archipelago's `custom_worlds`).
@@ -35,7 +35,7 @@ Trinkets only need to be collected, not equipped. YAMLs from before 0.2.1 still 
 `completionist` and `secret_treasure` means `treasure`.
 
 ## Locations
-Up to 620 locations, depending on your options.
+Up to 621 locations, depending on your options.
 
 | Always on | Count |
 |---|---|
@@ -48,7 +48,7 @@ Up to 620 locations, depending on your options.
 | Spirits | 16 |
 | Spirit Nest rewards | 20 |
 | Pages | 23 |
-| Combat rooms | 15 |
+| Combat rooms | 16 |
 | Ilda's Siblings | 3 |
 | Looter Parts, Pearls, Elevator Parts, Flight Time Upgrades, Candied Eggs, Moon Songs, Matchstick, Torpedo, Oil Vial | 20 |
 | Looter's shop (trinkets, Flaming Vessel, Oil Vial) | 9 |
@@ -89,14 +89,15 @@ Up to 620 locations, depending on your options.
 | `shop_trinket_point_checks` / `shop_trinket_points_per_check` | 5 / 1 | Trinket Point purchases as checks |
 | `shop_prices` (+ `shop_price_minimum` / `maximum`) | vanilla | vanilla / randomized (percent of vanilla) |
 | `shop_progression` | affordable | Which shop checks may hold progression: affordable / all / none |
-| `currency_multiplier` / `currency_item_amount` | 2 / 500 | Currency gain and size of a Currency item |
+| `currency_multiplier` | 2 | Multiplies the currency you pick up in the game (enemies, vessels) |
+| `currency_item_total` | 150 | All Currency items together, in percent of what the whole shop costs at your seed's prices |
 | `extra_trinket_points` / `extra_workshop_tokens` / `extra_oil_vials` / `extra_golden_feathers` | 0 | Extra copies in the pool |
 | `filler_currency` / `filler_boons` / `filler_traps` | 60 / 25 / 15 | Filler weights |
 | `boons` / `traps` | all | Which boons and traps can appear |
 | `death_link` (+ `death_link_amnesty`, `death_wish`) | off | Death Link, with deaths before sending / receiving |
 
 ## In the game
-- **HUD:** the last 5 items sent or received (with icons) and a "Checks: found / total" counter.
+- **HUD:** the last 5 items sent or received (with icons) and a "Checks: found / total   In logic: n" counter.
 - **Map tracker:** markers for every location using the game's own icons; bright = in logic, faded = not yet,
   very faint = checked. Press **F6** with the map open to switch: all -> uncollected -> in logic -> off.
 - **Shop:** each entry shows what its check sends (item, player, classification).
@@ -109,8 +110,6 @@ Up to 620 locations, depending on your options.
 - The game's own Spirit Nest counts the Spirit Fragments you picked up in the world, not the ones you received, so
   the ending scene can play before you have all 5 fragment items. The `final_flock` goal only completes once you
   have received them too.
-- Shop checks come into logic later than you can actually buy them (on purpose, so the shop doesn't fill the
-  first spheres).
 - The Aurie/YYToolkit console is hidden a few seconds after the game starts (it only shows engine debug output,
   such as harmless sound warnings); press **F9** to show it again.
 

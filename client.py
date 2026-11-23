@@ -548,7 +548,9 @@ class WellDwellerContext(CommonContext):
                 pass
         found = len(self.checked_locations)
         total = found + len(self.missing_locations)
-        lines = [f"checks\t{found}\t{total}"]
+        reachable = getattr(self, "reachable", None)
+        in_logic = "" if reachable is None else str(sum(1 for loc in self.missing_locations if loc in reachable))
+        lines = [f"checks\t{found}\t{total}\t{in_logic}"]
         for (sprite, frame), segs in self.feed:
             parts = ["msg", sprite, str(frame)]
             for color, text in segs:

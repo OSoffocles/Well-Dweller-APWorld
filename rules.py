@@ -101,7 +101,7 @@ def tag_ok(tag: str, s: CollectionState, p: int, trinkets: list[str]) -> bool:
     if tag == "hover_climb_ws": return s.has("Hover", p) and tag_ok("climb_ws", s, p, trinkets)
     if tag == "climb_hover_sw": return s.has("Soar", p) or (climb(s, p) and s.has("Hover", p) and (sling(s, p) or wsling(s, p)))
     if tag == "climb_s_hover": return s.has("Soar", p) or (climb(s, p) and s.has("Hover", p) and sling(s, p))
-    if tag == "ap28": return s.has_any(("Soar", "Wind Ride"), p) and climb(s, p) and (sling(s, p) or wsling(s, p))
+    if tag == "ap28": return s.has_all(("Wind Ride", "Hover"), p) and ((climb(s, p) and sling(s, p)) or s.has("Soar", p))
     if tag == "endless_hover":   # Endless Climb + Hover, or Soar
         return s.has("Soar", p) or (endless(s, p) and s.has("Hover", p))
     if tag == "an09":   # Hover, plus either the AN_06 gate side (from the right) or Climb+Slingshot/Wall Sling/Soar from the left

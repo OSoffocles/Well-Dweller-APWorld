@@ -196,6 +196,7 @@ PICKUPS = [
     ('Webdrench Inn', 'Trinket Slot (AW_05)', 'AW_05-1152-864', 'AW_05', 'Trinket Slot', []),
     ('Webdrench Inn', 'Workshop Token (AW_20)', 'AW_20-1536-1088', 'AW_20', 'Workshop Token', []),
     ('Webdrench Inn', 'Workshop Token (AW_31)', 'AW_31-672-1216', 'AW_31', 'Workshop Token', []),
+    ('Desiccated Castle', 'Combat Room (AC_14)', 'AC_14-2816-1744', 'AC_14', 'Combat Room', []),
 ]
 
 LEVERS_AND_VESSELS = [

@@ -1,7 +1,7 @@
 // In-game HUD (bottom left: last item messages + checks counter) and map tracker markers.
 // Both are fed by the client: hud.txt and marks.txt in <game>\archipelago\.
 //
-// hud.txt   "checks\t<found>\t<total>"
+// hud.txt   "checks\t<found>\t<total>[\t<in logic>]"
 //           "msg\t<sprite|ap>\t<frame>\t<RRGGBB>\t<text>[\t<RRGGBB>\t<text>...]"   (oldest first, up to 5)
 // marks.txt "mode\t0"   (starting filter: off)
 //           "m\t<map x>\t<map y>\t<sprite>\t<frame>\t<state>"   state 0 all checked, 1 in logic, 2 out of logic
@@ -11,7 +11,7 @@ struct HudSeg { double Color; std::string Text; };
 struct HudMsg { std::string Sprite; int Frame = 0; std::vector<HudSeg> Segs; };
 static struct
 {
-	int Found = -1, Total = 0;
+	int Found = -1, Total = 0, InLogic = -1;   // InLogic: unchecked locations in logic (-1 = not sent)
 	std::vector<HudMsg> Msgs;
 	fs::file_time_type Stamp{};
 } g_Hud;
@@ -63,6 +63,7 @@ static void ReadHudFile()
 		{
 			g_Hud.Found = std::atoi(parts[1].c_str());
 			g_Hud.Total = std::atoi(parts[2].c_str());
+			g_Hud.InLogic = parts.size() >= 4 && !parts[3].empty() ? std::atoi(parts[3].c_str()) : -1;
 		}
 		else if (parts[0] == "msg" && parts.size() >= 5)
 		{
@@ -170,6 +171,7 @@ static void DrawHud()
 	double icon = lineH, gap = 8 * ui, pad = 10 * ui, margin = 18 * ui;
 
 	std::string counter = "Checks: " + std::to_string(g_Hud.Found) + " / " + std::to_string(g_Hud.Total);
+	if (g_Hud.InLogic >= 0) counter += "   In logic: " + std::to_string(g_Hud.InLogic);
 	double width = Builtin("string_width", { RValue(std::string_view(counter)) }) * scale;
 	for (const HudMsg& m : g_Hud.Msgs)
 	{
